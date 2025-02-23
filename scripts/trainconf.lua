@@ -129,7 +129,8 @@ function trainconf.get_train_composition(train)
             end
         elseif generic_type == "fluid-wagon" then
             generic_type = "f"
-            train.fluid_capacity = train.fluid_capacity + carriage.prototype.fluid_capacity
+            local fluid_capacity = math.floor(carriage.prototype.fluid_capacity * (1 + 0.3 * carriage.quality.level))
+            train.fluid_capacity = train.fluid_capacity + fluid_capacity
             id = id + fluid_range
             if index <= 31 then
                 train.fluid_mask = bit32.bor(train.fluid_mask, mask)
