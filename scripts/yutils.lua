@@ -1039,7 +1039,7 @@ function yutils.build_filters(content, sign)
     if content then
         filters = {}
         for name, count in pairs(content) do
-            local signalid = tools.id_to_signal(name)
+            local signalid = tools.id_to_filter(name)
             table.insert(filters, {
                 value = signalid,
                 min = sign * count

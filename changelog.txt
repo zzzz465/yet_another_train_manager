@@ -3,6 +3,7 @@ Version: 1.0.4
 Date: 23.02.2025
   Info:
     - Add quality for fluid wagon
+    - Fix crash when combinator output global stock
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 09.02.2025
