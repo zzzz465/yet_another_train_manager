@@ -254,6 +254,12 @@ data:extend({
             name = "yaltn-use_direct_distance",
             setting_type = "startup",
             default_value = false
+        },
+        {
+            type = "bool-setting",
+            name = "yaltn-use_teleporter",
+            setting_type = "startup",
+            default_value = true
         }
 })
 

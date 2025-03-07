@@ -827,10 +827,7 @@ local function on_gui_opened(e)
         style = "inside_shallow_frame_with_padding"
     }
 
-
     local device = devices[device_entity.unit_number]
-    local selected_index = device.dconfig.role + 1
-
     local items = {
         { np("mode_disabled") },
         { np("mode_depot") },
@@ -840,9 +837,18 @@ local function on_gui_opened(e)
         { np("mode_buffer") },
         { np("mode_refueler") },
         { np("mode_builder") },
-        { np("mode_feeder") },
-        { np("mode_teleporter") }
+        { np("mode_feeder") }
     }
+    if settings.startup["yaltn-use_teleporter"].value then
+        table.insert(items, { np("mode_teleporter") })
+    else
+        if device.dconfig.role == defs.device_roles.teleporter then
+            device.dconfig.role = defs.device_roles.depot
+        end
+    end
+
+    local selected_index = device.dconfig.role + 1
+
     local flow = inner_frame.add { type = "flow", direction = "horizontal" }
     flow.add { type = "label", caption = { np("mode") } }
     flow.add {
