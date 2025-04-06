@@ -283,9 +283,11 @@ local function find_provider(request, forbidden, no_surface_change)
             if candidate_network ~= network then
                 local productions = candidate_network.productions[request.name]
 
-                for _, production in pairs(productions) do
-                    if production.device.teleporter_in_range and not production.device.teleporter_in_range.inactive then
-                        check_production(production, 0)
+                if productions then
+                    for _, production in pairs(productions) do
+                        if production.device.teleporter_in_range and not production.device.teleporter_in_range.inactive then
+                            check_production(production, 0)
+                        end
                     end
                 end
             end
@@ -356,7 +358,7 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
         else
             if train.front_stock.surface_index ~= provider.network.surface_index then
                 local src_network = yutils.get_context().networks[train.front_stock.force_index][train.front_stock.surface_index]
-                
+
                 table.insert(splitted_schedule, records)
                 records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network)
             else
@@ -420,7 +422,6 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
     end
 
     if delivery.requester.role ~= buffer_role then
-
         if not provider or requester.network == provider.network then
             teleport.add_teleporter(requester.network, train_pos, requester.position, records)
         else
