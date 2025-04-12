@@ -1054,7 +1054,7 @@ function allocator.route_to_station(train, device)
         }
     })
 
-    if (starter_records) then
+    if (starter_records and table_size(starter_records) >= 1) then
         train.splitted_schedule = { records }
         ttrain.schedule = { current = 1, records = starter_records }
     else
