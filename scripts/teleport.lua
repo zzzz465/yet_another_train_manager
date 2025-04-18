@@ -112,16 +112,35 @@ function teleport.add_teleporter(network, start_pos, target_pos, starter_records
 
     ---@type LuaEntity?
     local rail = tp_rail1.get_rail_segment_end(rev_rail_direction)
-    if not rail then return {} end
-    rail = rail.get_connected_rail {
-        rail_direction = rev_rail_direction,
-        rail_connection_direction = defines.rail_connection_direction.straight
-    }
-    if not rail then return {} end
-    rail = rail.get_connected_rail {
-        rail_direction = rev_rail_direction,
-        rail_connection_direction = defines.rail_connection_direction.straight
-    }
+    
+    ---@param current LuaEntity
+    local function find_rail(current)
+
+        local rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.straight
+        }
+        if rail then return rail end
+
+        rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.left
+        }
+        if rail then return rail end
+    
+        rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.right
+        }
+        if rail then return rail end
+
+        return current
+    end
+    
+    if rail then
+        rail = find_rail(rail)
+        rail = find_rail(rail)
+    end
 
     if rail then
         table.insert(starter_records, {
