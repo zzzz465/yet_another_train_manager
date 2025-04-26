@@ -356,8 +356,14 @@ function allocator.find_train(device, patterns, is_item)
                     end
                 end
 
-                if need_teleporter and not (candidate.teleporter_in_range and not candidate.teleporter_in_range.inactive) then
-                    goto skip
+                if need_teleporter then
+                    if not (candidate.teleporter_in_range and not candidate.teleporter_in_range.inactive) then
+                        goto skip
+                    end
+                    local tpatterns = candidate.teleporter_in_range.dconfig.patterns
+                    if tpatterns and not (tpatterns[train.gpattern] or tpatterns[train.rpattern]) then
+                        goto skip
+                    end
                 end
 
                 min_dist = d
@@ -498,13 +504,17 @@ function allocator.find_train(device, patterns, is_item)
 
             depot.failcode = nil
             if not depot.inactive then
-                if not need_teleporter or (depot.teleporter_in_range and not depot.teleporter_in_range.inactive) then
-                    candidate_depot = depot
-                    test_train(depot, train)
-                    if depot.role == builder_role then
-                        test_builder(depot)
-                    end
+                if need_teleporter then
+                    if not depot.teleporter_in_range then goto skip end
+                    if depot.teleporter_in_range.inactive then goto skip end
                 end
+                candidate_depot = depot
+                test_train(depot, train)
+                if depot.role == builder_role then
+                    test_builder(depot)
+                end
+
+                ::skip::
             end
         end
 

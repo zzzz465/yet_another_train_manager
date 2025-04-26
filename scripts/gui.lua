@@ -86,7 +86,7 @@ local use_provider_not_buffer = {
     [defs.device_roles.provider_and_requester] = true
 }
 
-local use_all_enable = {
+local with_layout_enable = {
 
     [defs.device_roles.provider] = true,
     [defs.device_roles.requester] = true,
@@ -95,7 +95,8 @@ local use_all_enable = {
     [defs.device_roles.depot] = true,
     [defs.device_roles.refueler] = true,
     [defs.device_roles.builder] = true,
-    [defs.device_roles.feeder] = true
+    [defs.device_roles.feeder] = true,
+    [defs.device_roles.teleporter] = true
 }
 
 ---@param ftable LuaGuiElement
@@ -280,7 +281,7 @@ local function create_fields(ftable, device)
 
     local is_builder = role == defs.device_roles.builder
     if not is_builder then
-        if use_all_enable[role] then
+        if with_layout_enable[role] then
             ftable.add { type = "label", caption = { np("accepted_layout") } }
 
             local flow1 = ftable.add { type = "flow" }

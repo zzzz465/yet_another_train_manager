@@ -111,6 +111,8 @@ local temp_x
 local temp_y
 ---@type (fun(r:IndexableEntity):IndexableEntity?,integer) | nil
 local temp_notMatched
+---@type {[string]:boolean}?
+local temp_patterns 
 
 ---@param node SpatialIndexLink
 ---@return IndexableEntity?
@@ -154,7 +156,20 @@ local function search(node)
             return
                 temp_notMatched --[[@as fun(r:IndexableEntity):IndexableEntity?, integer]](node --[[@as IndexableEntity]])
         else
-            return node --[[@as IndexableEntity]], 0
+            if not temp_patterns then
+                return node --[[@as IndexableEntity]], 0
+            else
+                local teleporter = node --[[@as Device]]
+                if not teleporter.patterns or table_size(teleporter.patterns) == 0 then
+                    return node --[[@as IndexableEntity]], 0
+                end
+                for pattern in pairs(temp_patterns) do
+                    if teleporter.patterns[pattern] then
+                        return node --[[@as IndexableEntity]], 0
+                    end
+                end
+                return nil, 0
+            end
         end
     end
 end
@@ -344,15 +359,18 @@ local function build_1(indexables, no_reload)
     end
 end
 
-
 ---@param node SpatialIndexLink
----@param device IndexableEntity
+---@param device Device
 ---@return IndexableEntity
 local function find_device(node, device)
 
     local position = device
     temp_x = position.x
     temp_y = position.y
+    temp_patterns = device.dconfig.patterns
+    if temp_patterns and table_size(temp_patterns) == 0 then
+        temp_patterns = nil
+    end
     temp_notMatched = nil
     node = search(node)
     return node

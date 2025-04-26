@@ -965,7 +965,7 @@ function yutils.content_to_item_map(content)
             local qname = signalid.name
             ---@cast qname -nil
             if signalid.quality and signalid.quality ~= "normal" then
-                qname = qname .. "/" .. signalid.quality 
+                qname = qname .. "/" .. signalid.quality
             end
             item_map[qname] = count
         end
@@ -1143,7 +1143,6 @@ function yutils.signal_name(signalId)
     end
 end
 
-
 ---@param network SurfaceNetwork
 local function compute_teleporter_infos(network)
     network.has_planet_teleporter = nil
@@ -1168,10 +1167,12 @@ local function compute_teleporter_infos(network)
                     d.teleporter_in_range = nil
                     if d.position then
                         local found_teleporter = find_device(node, d) --[[@as Device]]
-                        local dist = distance(d.position, found_teleporter.position)
-                        if dist < found_teleporter.teleport_range then
-                            d.teleporter_in_range = found_teleporter
-                            network.has_planet_teleporter = true
+                        if found_teleporter then
+                            local dist = distance(d.position, found_teleporter.position)
+                            if dist < found_teleporter.teleport_range then
+                                d.teleporter_in_range = found_teleporter
+                                network.has_planet_teleporter = true
+                            end
                         end
                     end
                 end
