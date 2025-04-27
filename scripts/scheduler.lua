@@ -301,6 +301,7 @@ scheduler.find_provider = find_provider
 
 ---@param delivery Delivery
 ---@param existing_content table<string, integer>
+---@return boolean?
 function scheduler.create_delivery_schedule(delivery, existing_content)
     local provider = delivery.provider
     local requester = delivery.requester
@@ -354,15 +355,19 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                 table.insert(splitted_schedule, records)
                 records = {}
             end
-            teleport.add_teleporter(provider.network, train_pos, provider.position, records)
+            teleport.add_teleporter(provider.network, train_pos, provider.position, records, nil, train)
         else
             if train.front_stock.surface_index ~= provider.network.surface_index then
                 local src_network = yutils.get_context().networks[train.front_stock.force_index][train.front_stock.surface_index]
 
                 table.insert(splitted_schedule, records)
-                records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network)
+                records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network, train)
+                if not records then
+                    yutils.cancel_delivery(delivery)
+                    return true
+                end
             else
-                teleport.add_teleporter(provider.network, train_pos, provider.position, records)
+                teleport.add_teleporter(provider.network, train_pos, provider.position, records, nil, train)
             end
         end
 
@@ -423,10 +428,10 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
 
     if delivery.requester.role ~= buffer_role then
         if not provider or requester.network == provider.network then
-            teleport.add_teleporter(requester.network, train_pos, requester.position, records)
+            teleport.add_teleporter(requester.network, train_pos, requester.position, records, nil, train)
         else
             table.insert(splitted_schedule, records)
-            records = teleport.add_teleporter(provider.network, train_pos, requester.position, records, requester.network)
+            records = teleport.add_teleporter(provider.network, train_pos, requester.position, records, requester.network, train)
             ---@cast records -nil
         end
 
@@ -549,10 +554,12 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
         train.splitted_schedule = nil
     end
 
-    local schedule = { current = 1, records = records }
+    if table_size(records) > 0 then
+        local schedule = { current = 1, records = records }
 
     -- schedule = { current = 1, records = { { station = "Temp", wait_conditions = { { type = "empty", compare_type = "and" } } } } }
-    train.train.schedule = schedule
+        train.train.schedule = schedule
+    end
 end
 
 ---@param request Request
@@ -661,7 +668,7 @@ local create_payload = scheduler.create_payload
 ---@param train Train
 ---@param content table<string, integer>
 ---@param existing_content table<string, integer>
----@return Delivery
+---@return Delivery?
 local function create_delivery(request, candidate, train, content, existing_content)
     if tools.tracing then
         debug("create_delivery:" .. request.name .. "=" .. request.requested)
@@ -698,7 +705,9 @@ local function create_delivery(request, candidate, train, content, existing_cont
     train.state = defs.train_states.to_producer
     local candidate_device = candidate.device
     candidate_device.inactivity_delay = nil
-    scheduler.create_delivery_schedule(delivery, existing_content)
+    if scheduler.create_delivery_schedule(delivery, existing_content) then
+        return nil
+    end
 
     if device.network.reservations then
         device.network.reservations[request.name] = nil
@@ -902,6 +911,7 @@ function scheduler.process_request(request)
     end
 
     ---@cast train -nil
+    train.network_mask = band(device.network_mask, candidate_device.network_mask)
 
     local content = {}
     if buffer_feeder_roles[candidate_device.role] then

@@ -609,8 +609,9 @@ function uiutils.create_product_button(row, name, amount, color)
     ---@cast signalid -nil
 
     local sprite_name = name
-    if signalid.type == "item" then
+    if signalid.type == "item" or not signalid.type then
         proto = prototypes.item[signalid.name]
+        sprite_name = "item/" .. signalid.name
     elseif signalid.type == "fluid" then
         proto = prototypes.fluid[signalid.name]
     elseif signalid.type == "virtual" then

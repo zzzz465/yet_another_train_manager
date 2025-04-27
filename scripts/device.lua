@@ -1122,6 +1122,7 @@ local function process_device(device)
         end
         device.teleport_range = dconfig.teleport_range or config.teleport_range
         device.planet_teleporter = dconfig.planet_teleporter or config.planet_teleporter
+        device.network_mask = dconfig.network_mask or default_network_mask
         read_virtual_signals()
         local trains = device.trainstop.get_train_stop_trains()
         local count = 0

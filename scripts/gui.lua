@@ -54,6 +54,17 @@ local use_carry = {
     [defs.device_roles.feeder] = true
 }
 
+local has_network_mask = {
+
+    [defs.device_roles.provider] = true,
+    [defs.device_roles.requester] = true,
+    [defs.device_roles.provider_and_requester] = true,
+    [defs.device_roles.buffer] = true,
+    [defs.device_roles.feeder] = true,
+    [defs.device_roles.teleporter] = true
+}
+
+
 local has_priority = {
 
     [defs.device_roles.provider] = true,
@@ -258,7 +269,8 @@ local function create_fields(ftable, device)
     end
 
 
-    create_mask("network_mask", use_carry[role], settings.get_player_settings(ftable.player_index)["yaltn-network_mask_size"].value --[[@as integer]])
+    create_mask("network_mask", has_network_mask[role], 
+            settings.get_player_settings(ftable.player_index)["yaltn-network_mask_size"].value --[[@as integer]])
 
     add_numeric_field("priority", has_priority[role], np("priority-tooltip"), true)
     add_numeric_field("rpriority", role == defs.device_roles.builder, nil, true)

@@ -357,11 +357,17 @@ function allocator.find_train(device, patterns, is_item)
                 end
 
                 if need_teleporter then
-                    if not (candidate.teleporter_in_range and not candidate.teleporter_in_range.inactive) then
-                        goto skip
+                    local found
+                    if device.network.teleporters then
+                        for _, teleporter in pairs(device.network.teleporters) do
+                            local tpatterns = teleporter.dconfig.patterns
+                            if not tpatterns or tpatterns[train.gpattern] or tpatterns[train.rpattern] then
+                                found = teleport
+                                break
+                            end
+                        end
                     end
-                    local tpatterns = candidate.teleporter_in_range.dconfig.patterns
-                    if tpatterns and not (tpatterns[train.gpattern] or tpatterns[train.rpattern]) then
+                    if not found then
                         goto skip
                     end
                 end
@@ -1016,9 +1022,9 @@ function allocator.route_to_station(train, device)
         if front_stock.surface_index ~= device.entity.surface_index then
             local from_network = yutils.get_context().networks[front_stock.force_index][front_stock.surface_index]
             starter_records = records
-            records = teleport.add_teleporter(from_network, teleport_pos, device.position, records, device.network)
+            records = teleport.add_teleporter(from_network, teleport_pos, device.position, records, device.network, train)
         else
-            teleport.add_teleporter(device.network, teleport_pos, device.position, records)
+            teleport.add_teleporter(device.network, teleport_pos, device.position, records, nil, train)
         end
     end
 
