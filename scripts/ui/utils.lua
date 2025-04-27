@@ -269,7 +269,7 @@ local order_cache = {}
 function uiutils.get_product_order(name)
     local order = order_cache[name]
     if not order then
-        local signal = tools.id_to_signal(name) 
+        local signal = tools.id_to_signal(name)
         ---@cast signal -nil
         local proto
         if signal.type == "item" then
@@ -514,7 +514,7 @@ function uiutils.zoom_to(player, entity, follow)
         end
     end
 
-    player.set_controller{type=defines.controllers.remote, position=entity.position, surface=entity.surface}
+    player.set_controller { type = defines.controllers.remote, position = entity.position, surface = entity.surface }
 end
 
 uiutils.np = np

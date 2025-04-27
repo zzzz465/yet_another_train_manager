@@ -10,6 +10,7 @@ local teleport = require("scripts.teleport")
 local trainconf = require("scripts.trainconf")
 local logger = require("scripts.logger")
 local trainstats = require("scripts.trainstats")
+local scheduler = require("scripts.scheduler")
 
 ------------------------------------------------------
 local device_manager = {}
@@ -61,6 +62,9 @@ local train_count_signal = tools.build_virtual_signal(commons.prefix .. "-train_
 
 local item_slot_count = settings.startup[prefix .. "-item_slot_count"].value
 
+-- reroute train when a delivery is cancelled
+local reroute_train = scheduler.reroute_train
+
 -----------------------------------------------------
 
 ---@param device Device
@@ -73,33 +77,6 @@ local function clear_train_stop(device)
     end
 end
 
--- reroute train when a delivery is cancelled
----@param train Train
-local function reroute_train(train)
-    if train and train.train.valid and not train.train.manual_mode then
-        train.delivery = nil
-        local train_network = yutils.get_network(train.front_stock)
-        local depot = allocator.find_free_depot(train_network, train)
-
-        -- case depot
-        if train.depot then
-            if depot_roles[train.depot.role] then
-                yutils.unlink_train_from_depots(train.depot, train)
-            end
-        end
-        if depot then
-            if depot.role == depot_role or depot.role == builder_role then
-                yutils.link_train_to_depot(depot, train)
-                train.state = defs.train_states.to_depot
-                read_train_internals(train)
-                allocator.route_to_station(train, depot)
-            end
-        else
-            logger.report_depot_not_found(train.network, train)
-            train.train.manual_mode = true
-        end
-    end
-end
 
 ---@param device Device
 local function clear_device(device)

@@ -364,6 +364,7 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                 records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network, train)
                 if not records then
                     yutils.cancel_delivery(delivery)
+                    scheduler.reroute_train(train)
                     return true
                 end
             else
@@ -996,5 +997,33 @@ function scheduler.process(data)
 end
 
 tools.on_nth_tick(5, scheduler.process)
+
+-- reroute train when a delivery is cancelled
+---@param train Train
+function scheduler.reroute_train(train)
+    if train and train.train.valid and not train.train.manual_mode then
+        train.delivery = nil
+        local train_network = yutils.get_network(train.front_stock)
+        local depot = allocator.find_free_depot(train_network, train)
+
+        -- case depot
+        if train.depot then
+            if defs.depot_roles[train.depot.role] then
+                yutils.unlink_train_from_depots(train.depot, train)
+            end
+        end
+        if depot then
+            if depot.role == depot_role or depot.role == commons.builder_role then
+                yutils.link_train_to_depot(depot, train)
+                train.state = defs.train_states.to_depot
+                yutils.read_train_internals(train)
+                allocator.route_to_station(train, depot)
+            end
+        else
+            logger.report_depot_not_found(train.network, train)
+            train.train.manual_mode = true
+        end
+    end
+end
 
 return scheduler
