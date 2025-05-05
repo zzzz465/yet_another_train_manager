@@ -705,7 +705,6 @@ local function create_delivery(request, candidate, train, content, existing_cont
 
     train.state = defs.train_states.to_producer
     local candidate_device = candidate.device
-    candidate_device.inactivity_delay = nil
     if scheduler.create_delivery_schedule(delivery, existing_content) then
         return nil
     end
