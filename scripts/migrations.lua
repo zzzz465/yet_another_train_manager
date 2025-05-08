@@ -66,7 +66,7 @@ local function convert_mask_to_pattern(context)
 end
 
 
-local function migration_2_0_0()
+local function migration_1_0_0()
 
     local context = yutils.get_context()
     convert_mask_to_pattern(context)
@@ -101,8 +101,22 @@ local function migration_2_0_0()
     game.print({ "yaltn-device.update-message" }, commons.print_settings)
 end
 
+local function migration_1_0_11()
+    local context = yutils.get_context()
+    local devices_runtime = Runtime.get("Device")
+    for _, d in pairs(devices_runtime.map) do
+        local device = d --[[@as Device]]
+        if device.role == defs.device_roles.teleporter then
+            if not device.network_mask then
+                device.network_mask = 1
+            end
+        end
+    end
+end
+
 local migrations_table = {
-    ["2.0.0"] = migration_2_0_0,
+    ["1.0.0"] = migration_1_0_0,
+    ["1.0.11"] = migration_1_0_11
 }
 
 
