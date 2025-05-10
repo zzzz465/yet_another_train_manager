@@ -493,7 +493,7 @@ tools.on_nth_tick(60, function(e)
     local tick = game.tick
     for player_index, vars in pairs(storage.players) do
         local player = game.players[player_index]
-        local vars = tools.get_vars(player)
+        if not player then goto skip end
         local refresh_rate = vars.ui_refresh_rate
         if not refresh_rate or refresh_rate == refresh_rate_none then
             goto skip

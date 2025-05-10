@@ -107,7 +107,10 @@ function tools.close_ui(unit_number, close_proc, field)
         local selected = vars[field]
         if selected and selected.valid and selected.unit_number == unit_number then
             vars.selected = nil
-            close_proc(game.players[index])
+            local player = game.players[index]
+            if player then
+                close_proc(player)
+            end
             return
         end
     end
