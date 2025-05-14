@@ -679,4 +679,11 @@ uiutils.update = uiframe.update
 uiutils.show_tab = uiframe.show_tab
 uiutils.set_signal_filter = uiframe.set_signal_filter
 
+script.on_event(prefix .. "-uiopen", function(e)
+    local player = game.players[e.player_index]
+    open(player)
+end
+)
+
+
 return uiframe
