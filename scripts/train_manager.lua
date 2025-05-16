@@ -277,6 +277,7 @@ local function try_combine_request(train, delivery)
         if requested < request.threshold then goto skip end
 
         delivery = train.delivery
+        if not delivery then return nil end
         while delivery do
             if delivery.content[request.name] then
                 goto skip
@@ -546,6 +547,7 @@ local function on_train_changed_state(event)
         if train then
             if train.state == defs.train_states.loading then
                 local delivery = train.delivery
+                if not delivery then return end
 
                 if delivery.provider.main_controller then
                     remote.call("transfert_controller", "fire_train_leave", delivery.provider.main_controller)
@@ -599,6 +601,7 @@ local function on_train_changed_state(event)
                 return
             elseif train.state == defs.train_states.unloading then
                 local delivery = train.delivery
+                if not delivery then return end
 
                 if buffer_feeder_roles[delivery.provider.role] and
                     delivery.provider.train == train then
