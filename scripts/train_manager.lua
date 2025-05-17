@@ -277,6 +277,7 @@ local function try_combine_request(train, delivery)
         if requested < request.threshold then goto skip end
 
         delivery = train.delivery
+        if not delivery then return nil end
         while delivery do
             if delivery.content[request.name] then
                 goto skip
