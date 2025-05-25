@@ -35,14 +35,10 @@ local function get_frame(player) return player.gui.screen[frame_name] end
 ---@param player LuaPlayer
 local function close_ui(player)
     local frame = get_frame(player)
-    if frame then frame.destroy() end
+    if frame then 
+        frame.destroy() 
+    end
     tools.get_vars(player).edited_device = nil
-end
-
----@param e EventData.on_gui_closed
-local function on_gui_closed(e)
-    local player = game.get_player(e.player_index) --[[@as LuaPlayer]]
-    close_ui(player)
 end
 
 local use_carry = {
@@ -793,17 +789,27 @@ tools.on_gui_click(np("threshold_unit"), unit_handler)
 ---@param e EventData.on_gui_opened
 local function on_gui_opened(e)
     local player = game.get_player(e.player_index) --[[@as LuaPlayer]]
+
+    if e.element and e.element.name == frame_name then
+        return
+    end    
+    
     if not (e.entity and e.entity.name == commons.device_name) then
         close_ui(player)
         return
     end
 
-    close_ui(player)
-
-    player.opened = nil
     local device_entity = e.entity
+    local frame
+    frame = get_frame(player)
+    if frame and device_entity and tools.get_vars(player).edited_device == device_entity then
+        return
+    end
+
+    close_ui(player)
     if not device_entity then return end
 
+    player.opened = nil
     local frame = player.gui.screen.add {
         type = "frame",
         direction = 'vertical',
@@ -932,6 +938,7 @@ local function on_gui_opened(e)
 
     tools.get_vars(player).edited_device = device
     frame.force_auto_center()
+    player.opened = frame
 end
 
 tools.on_gui_click(np("importfa"),
@@ -1287,7 +1294,6 @@ end
 
 
 tools.on_event(defines.events.on_gui_opened, on_gui_opened)
-tools.on_event(defines.events.on_gui_closed, on_gui_closed)
 
 tools.on_gui_click(np("close"), ---@param e EventData.on_gui_click
     function(e)

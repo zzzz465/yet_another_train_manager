@@ -76,7 +76,7 @@ function allocator.find_free_depot(network, train, device, is_parking)
         return true
     end
 
-    if device and device.trainstop and device.trainstop.connected_rail then
+    if device and device.trainstop and device.trainstop.valid and device.trainstop.connected_rail and device.trainstop.connected_rail.valid then
         for _, depot in pairs(network.free_depots) do
             if depot.train == nil then
                 local d
