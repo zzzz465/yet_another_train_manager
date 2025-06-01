@@ -206,7 +206,7 @@ function uiutils.build_train_filter(player)
     if uiconfig.network_mask and uiconfig.network_mask ~= 0 then
         ---@param train Train
         local cond = function(train)
-            return bit32.band(train.network_mask, uiconfig.network_mask) ~= 0
+            return bit32.band(train.network_mask or 1, uiconfig.network_mask) ~= 0
         end
         table.insert(conditions, cond)
     end

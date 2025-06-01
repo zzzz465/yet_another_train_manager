@@ -709,6 +709,7 @@ function allocator.builder_create_train(builder)
         for i = 1, element.count do
             local direction = base_direction
             local name
+            ---@type defines.rail_direction.back | defines.rail_direction.front
             local connect_direction = defines.rail_direction.front
 
             name = element.type
