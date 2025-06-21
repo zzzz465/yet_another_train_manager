@@ -9,6 +9,7 @@ local loco_range = 1000000
 
 ---@class TrainConfElement
 ---@field type string
+---@field quality string?
 ---@field count integer
 ---@field is_back boolean
 
@@ -33,6 +34,10 @@ function trainconf.split_pattern(pattern)
         local splitter = string.gmatch(eq, "[^=]+")
         local type = splitter()
         local scount = splitter()
+        local type_splitter = string.gmatch(type, "[^/]+")
+        type = type_splitter()
+        local quality = type_splitter()
+        
         local is_back = false
         if string.sub(type, 1, 1) == "<" then
             type = string.sub(type, 2)
@@ -42,6 +47,7 @@ function trainconf.split_pattern(pattern)
         ---@type TrainConfElement
         local element = {
             type = type,
+            quality = quality,
             count = tonumber(scount) --[[@as integer]],
             is_back = is_back
         }
@@ -66,6 +72,10 @@ function trainconf.create_pattern(elements)
             table.insert(list, "<")
         end
         table.insert(list, element.type)
+        if element.quality then
+            table.insert(list, "/")    
+            table.insert(list, element.quality)
+        end
         table.insert(list, "=")
         table.insert(list, element.count)
     end
@@ -152,8 +162,14 @@ function trainconf.get_train_composition(train)
         if last_specific and last_specific.type == name and last_specific.is_back == is_back then
             last_specific.count = last_specific.count + 1
         else
+            ---@type string?
+            local quality = carriage.quality.name
+            if quality == "normal" then
+                quality = nil
+            end
             last_specific = {
                 type = name,
+                quality = quality,
                 count = 1,
                 is_back = is_back
             }
@@ -349,7 +365,11 @@ function trainconf.get_train_content(elements)
     ---@type {[string]:integer}
     local content = {}
     for _, element in pairs(elements) do
-        content[element.type] = (content[element.type] or 0) + element.count
+        local key = element.type
+        if element.quality and element.quality ~= "quality" then
+            key = key .. "/" .. element.quality
+        end
+        content[key] = (content[element.type] or 0) + element.count
     end
     return content
 end
@@ -585,19 +605,25 @@ function trainconf.load_config_from_mask(device)
     end
 end
 
----@param type string?
+---@param qtype string?
 ---@return string?
-function trainconf.get_sprite(type)
-    if not type then return nil end
+function trainconf.get_sprite(qtype)
+    if not qtype then return nil end
+
+    local type_splitter = string.gmatch(qtype, "[^/]+")
+    local type = type_splitter()
+    local quality = type_splitter()
+
     local sprite_name = commons.generic_to_sprite[type]
     if sprite_name then
         return sprite_name
     else
-        local proto = prototypes.entity[type.type]
+        local proto = prototypes.entity[type]
         if proto then
             local item = proto.items_to_place_this[1]
             if item then
-                return "item/" .. item.name
+                local r = "item/" .. item.name
+                return r
             end
         end
 
@@ -650,7 +676,12 @@ function trainconf.create_generic(pattern)
     for _, element in pairs(elements) do
         local name = element.type
         local proto = prototypes.entity[name]
-        local type = proto.type
+        local type
+        if not proto then 
+            type = "c"
+        else
+            type = proto.type
+        end
         if type == "locomotive" then
             type = "*"
         elseif type == "cargo-wagon" then

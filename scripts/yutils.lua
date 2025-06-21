@@ -987,7 +987,11 @@ function yutils.create_layout_strings(pattern)
         else
             local item = prototypes.entity[element.type].items_to_place_this[1]
             if item then
-                marker = "[item=" .. item.name .. "]"
+                if element.quality then
+                    marker = "[item=" .. item.name .. ",quality=" .. element.quality .. "]"
+                else
+                    marker = "[item=" .. item.name .. "]"
+                end
             end
         end
         if marker then

@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.17
+Date: 21.06.2025
+  Changes:
+    - Add quality in layout filtering and builder station
+  Bugfixes:
+    - Fix crash when removing a mod with locomotive or wagin
+---------------------------------------------------------------------------------------------------
 Version: 1.0.16
 Date: 01.06.2025
   Bugfixes:

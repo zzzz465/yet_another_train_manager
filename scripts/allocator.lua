@@ -636,7 +636,13 @@ function allocator.builder_is_available(builder)
     if inv then
         local content = inv.get_contents()
         local content_map = {}
-        for _, item in pairs(content) do content_map[item.name] = item.count end
+        for _, item in pairs(content) do 
+            local key = item.name
+            if item.quality and item.quality ~= "normal" then
+                key = key .. "/" .. item.quality
+            end
+            content_map[key] = item.count
+        end
 
         for name, count in pairs(builder.builder_parts) do
             local existing = content_map[name] or 0
@@ -725,7 +731,8 @@ function allocator.builder_create_train(builder)
                 name = name,
                 position = pos,
                 direction = direction,
-                force = builder.entity.force
+                force = builder.entity.force,
+                quality = element.quality
             }
 
             if not entity then
@@ -795,7 +802,9 @@ function allocator.builder_compute_conf(builder)
     local stock_count = 0
     builder.builder_cargo_count = 0
     builder.builder_fluid_count = 0
-    for name, count in pairs(content) do
+    for qname, count in pairs(content) do
+        local splitter = string.gmatch(qname, "[^/]+")
+        local name = splitter()
         local proto = prototypes.entity[name]
         if builder.builder_fuel_item and proto.type == "locomotive" then
             fuel_count = fuel_count + proto.get_inventory_size(defines.inventory.fuel) * stack_size * count

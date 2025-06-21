@@ -20,9 +20,10 @@ local wqty = 40
 ---@param with_back boolean?
 ---@param count integer?
 ---@param type string?
+---@param quality string?
 ---@param is_back boolean?
 ---@param generic boolean
-local function add_cell(line, with_back, count, type, is_back, generic)
+local function add_cell(line, with_back, count, type, quality, is_back, generic)
     local cell = line.add { type = "flow", direction = "horizontal" }
     if line.tags.same_width then
         cell.style.width = 140
@@ -38,12 +39,17 @@ local function add_cell(line, with_back, count, type, is_back, generic)
         fstock = cell.add {
             type = "choose-elem-button",
             name = "rstock",
-            elem_type = "entity",
-            elem_filters = filter,
-            entity = type
+            elem_type = "entity-with-quality",
+            elem_filters = filter
         }
         tools.set_name_handler(fstock, np("rstock"))
-        show_sens = type and prototypes.entity[type].type == "locomotive"
+        if type and prototypes.entity[type] then
+            fstock.elem_value = {
+                name = type,
+                quality = quality or "normal"
+            }
+        end
+        show_sens = type and prototypes.entity[type] and prototypes.entity[type].type == "locomotive"
     end
 
     fstock.style.left_margin = 20
@@ -83,9 +89,9 @@ function layout_editor.add_line(line, elements, with_back, generic, same_width)
     line.clear()
 
     for _, element in pairs(elements) do
-        add_cell(line, with_back, element.count, element.type, element.is_back, generic)
+        add_cell(line, with_back, element.count, element.type, element.quality, element.is_back, generic)
     end
-    add_cell(line, with_back, nil, nil, false, generic)
+    add_cell(line, with_back, nil, nil, nil, false, generic)
 end
 
 local stock_options = {
@@ -123,7 +129,7 @@ local function on_gstock_click(e)
             ---@cast line -nil
             local index = tools.index_of(line.children, cell)
             if #line.children == index then
-                add_cell(line, false, nil, nil, nil, true)
+                add_cell(line, false, nil, nil, nil, nil, true)
             end
         end
     elseif e.button == 4 then
@@ -161,17 +167,17 @@ tools.on_named_event(np("sens"), defines.events.on_gui_click, on_sens_click)
 
 ---@param e EventData.on_gui_elem_changed
 local function on_rstock_element_changed(e)
-    local type = e.element.elem_value
+    local elem_value = e.element.elem_value
     local cell = e.element.parent
     ---@cast cell -nil
     local line = cell.parent
     ---@cast line -nil
-    if type then
+    if elem_value then
         cell.qty.enabled = true
         cell.qty.focus()
         local index = tools.index_of(line.children, cell)
         if #line.children == index then
-            add_cell(line, false, nil, nil, false, false)
+            add_cell(line, false, nil, nil, nil, false, false)
         end
     else
         local index = tools.index_of(line.children, cell)
@@ -183,8 +189,8 @@ local function on_rstock_element_changed(e)
         end
     end
     if cell.valid then
-        local type        = e.element.elem_value
-        cell.sens.visible = type and prototypes.entity[type].type == "locomotive"
+        local elem_value        = e.element.elem_value
+        cell.sens.visible = elem_value and prototypes.entity[elem_value.name].type == "locomotive"
     end
 end
 tools.on_named_event(np("rstock"), defines.events.on_gui_elem_changed, on_rstock_element_changed)
@@ -337,22 +343,28 @@ function layout_editor.read_cells(cells)
         local qty = cell.qty
         local gstock = cell.gstock
         local sens = cell.sens
-        local type
+        local entity_type
         if gstock then
             local sprite
             sprite = gstock.sprite
             if not sprite then goto skip end
             for _, s in pairs(stock_options) do
                 if s.sprite == sprite then
-                    type = s.type
+                    entity_type = s.type
                     break
                 end
             end
-            if not type then goto skip end
+            if not entity_type then goto skip end
         else
             local rstock = cell.rstock
-            type = rstock.elem_value
-            if not type then goto skip end
+            local elem_value = rstock.elem_value
+            if not elem_value then goto skip end
+            if type(elem_value) ~= "table" then goto skip end
+
+            entity_type = elem_value.name
+            if elem_value.quality and elem_value.quality ~= "normal" then
+                entity_type = entity_type .. "/" .. elem_value.quality
+            end
         end
 
         local count = tonumber(qty.text)
@@ -360,7 +372,7 @@ function layout_editor.read_cells(cells)
         if count and count > 0 then
             ---@type TrainConfElement
             local element = {
-                type = type,
+                type = entity_type,
                 count = count,
                 is_back = is_back
             }
