@@ -246,7 +246,7 @@ local function find_provider(request, forbidden, no_surface_change)
     end
 
     network = network.connected_network
-    if network then
+    if network and commons.se_enabled then
         productions = network.productions[request.name]
         if not productions or not next(productions) then
             return
@@ -431,9 +431,13 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
         if not provider or requester.network == provider.network then
             teleport.add_teleporter(requester.network, train_pos, requester.position, records, nil, train)
         else
-            table.insert(splitted_schedule, records)
+            if records and table_size(records) > 0 then
+                table.insert(splitted_schedule, records)
+            end
             records = teleport.add_teleporter(provider.network, train_pos, requester.position, records, requester.network, train)
-            ---@cast records -nil
+            if not records then
+                records = {}
+            end
         end
 
         local backer_name = requester.trainstop.backer_name
@@ -547,7 +551,9 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                 }
             })
         end
-        table.insert(splitted_schedule, records)
+        if records and table_size(records) > 0 then
+            table.insert(splitted_schedule, records)
+        end
         records = splitted_schedule[1]
         table.remove(splitted_schedule, 1)
         train.splitted_schedule = splitted_schedule

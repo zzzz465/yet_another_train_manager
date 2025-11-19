@@ -33,6 +33,7 @@ local commons = {
 
     se_elevator_name = "se-space-elevator",
     se_elevator_trainstop_name = "se-space-elevator-train-stop",
+    se_enabled = true,
 
     colors = {
         black = 1,

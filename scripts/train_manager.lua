@@ -54,7 +54,7 @@ end
 ---@param content table<string, integer> ?
 ---@param train Train?
 ---@param sign integer?
----@param operation integer
+---@param operation integer  -- oper_loading / oper_unloading
 local function set_device_output(device, content, train, sign, operation)
     if not device.out_red.valid then return end
 
@@ -389,7 +389,13 @@ local function on_train_changed_state(event)
                                     local train_contents = yutils.get_train_content(train)
                                     target_content = {}
                                     for name, count in pairs(delivery.content) do
-                                        target_content[name] = (train_contents[name] or 0) + count
+                                        local current = train_contents[name]
+                                        if current and current >= count then
+                                            --- adjust to avoid unloading if qty in train >= qty in delivery
+                                            target_content[name] = 4000000
+                                        else 
+                                            target_content[name] = (current or 0) + count
+                                        end
                                     end
                                     set_device_output(delivery.provider, target_content, train, -1, oper_loading)
                                 else

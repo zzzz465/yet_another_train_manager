@@ -147,7 +147,7 @@ function allocator.find_free_depot(network, train, device, is_parking)
             return min_depot
         end
         local connected_network = network.connected_network
-        if connected_network then
+        if connected_network and commons.se_enabled then
             local index = Pathing.find_closest_exiting_trainstop(device)
             if not index then return nil end
 
@@ -550,7 +550,7 @@ function allocator.find_train(device, patterns, is_item)
 
     -- switch to connected netwok
     local se_network = network.connected_network
-    if se_network then
+    if se_network and commons.se_enabled then
         local se_index = Pathing.find_closest_incoming_rail(device)
         if se_index then
             local se_trainstop = se_network.connecting_trainstops[se_index]

@@ -1,6 +1,6 @@
 {
   "name": "yet_another_train_manager",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "title": "Yet another train manager",
   "author": "Telkine2018",
   "contact": "",
@@ -11,6 +11,7 @@
 		"base >= 2.0.43" ,
 		"flib >= 0.8.2",
     "? transfert_controller >= 1.0.0",
-    "? nullius"
+    "? nullius",
+    "? space-exploration"
 	]
 }

@@ -863,6 +863,14 @@ local function process_device(device)
                         end
                         goto skip
                     end
+
+                    local internal_requests = device.internal_requests
+                    if internal_requests and internal_requests[name] and device.produced_items[name] then
+                        local production = device.produced_items[name]
+                        production.provided = 0
+                        yutils.remove_production(production)
+                    end
+
                     count = -count
 
                     local threshold = threshold_map[name] or default_threshold

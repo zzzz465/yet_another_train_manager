@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.18
+Date: 19.11.2025
+  Changes:
+    - Add compatibility avec Space exploration (through space elevator).
+    - Recommendation: if using Space Exploration, disable teleporters for a better game experience
+    - Add compatibility with "Electronic locomotive"
+    - Keep order in train list
+  Bugfixes:
+    - Fix invalid unload in combined deliveries (many pickup , one unload)
+---------------------------------------------------------------------------------------------------
 Version: 1.0.17
 Date: 21.06.2025
   Changes:

@@ -101,7 +101,10 @@ local function on_train_teleport_finished(event)
 
         if train.tracked then
             for player_index, _ in pairs(train.tracked) do
-                game.players[player_index].opened = train.front_stock
+                local player = game.players[player_index]
+                local front_stock = train.front_stock
+                player.opened = front_stock
+                player.centered_on = front_stock
             end
             train.tracked = nil
         end
@@ -240,17 +243,24 @@ function multisurf.add_cross_network_trainstop(from_network, position, records)
 end
 
 ---@param entity LuaEntity
-local function udpate_network(entity)
+local function update_network(entity)
     local network = yutils.get_network_base(entity.force_index, entity.surface_index)
 
     if network.connected_network then return end
-    if network.connecting_ids then
-        if network.connecting_ids[entity.unit_number] then return end
-        network.connecting_ids[entity.unit_number] = true
-    else
-        network.connecting_ids = { [entity.unit_number] = true }
+    if entity.unit_number then
+        if network.connecting_ids then
+            if network.connecting_ids[entity.unit_number] then return end
+            network.connecting_ids[entity.unit_number] = true
+        else
+            network.connecting_ids = { [entity.unit_number] = true }
+        end
     end
     multisurf.try_connect_network(network)
+end
+
+---@param e LuaEntity
+function multisurf.add_elevator(e) 
+    update_network(e)
 end
 
 ---@param e EventData.on_selected_entity_changed
@@ -261,7 +271,7 @@ local function on_selected_entity_changed(e)
     if not tools.starts_with(entity.name, commons.se_elevator_name) then
         return
     end
-    udpate_network(entity)
+    update_network(entity)
 end
 
 ---@param e EventData.on_gui_opened
@@ -273,7 +283,7 @@ local function on_gui_opened(e)
     if not tools.starts_with(entity.name, commons.se_elevator_name) then
         return
     end
-    udpate_network(entity)
+    update_network(entity)
 end
 
 tools.on_event(defines.events.on_selected_entity_changed,

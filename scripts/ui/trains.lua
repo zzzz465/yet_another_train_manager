@@ -38,7 +38,7 @@ local function np(name) return uitrains_prefix .. name end
 ---@type HeaderDef[]
 local header_defs = {
 
-    { name = "map",           width = 100,        nosort = true }, { name = "state", width = 100 },
+    { name = "map",           width = 100 }, { name = "state", width = 100 },
     { name = "composition",   width = 200 },
     { name = "route",         width = 140,        nosort = true },
     { name = "shipment",      width = 8 * 42 + 2, nosort = true },
@@ -87,6 +87,11 @@ end
 
 ---@type table<string, fun(t1:Train, t2:Train) : boolean>
 local sort_methods = {
+
+    map = 
+        ---@param t1 Train
+        ---@param t2 Train
+        function(t1, t2) return t1.id < t2.id end,
 
     state = --
     ---@param t1 Train
@@ -143,10 +148,16 @@ function uitrains.update(player)
 
     local uiconfig = uiutils.get_uiconfig(player)
 
+    local sort
     if uiconfig.train_sort then
-        local sort = sort_methods[uiconfig.train_sort]
-        if sort then table.sort(sorted_trains, sort) end
+        sort = sort_methods[uiconfig.train_sort]
     end
+    if not sort then
+        ---@param t1 Train
+        ---@param t2 Train
+        sort = function(t1, t2) return t1.id < t2.id end
+    end
+    table.sort(sorted_trains, sort) 
 
     content.clear()
 

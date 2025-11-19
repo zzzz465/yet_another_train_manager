@@ -131,9 +131,9 @@ local prefix = commons.prefix
 ---@field used_depots table<integer, Device>
 ---@field refuelers table<integer, Device>
 ---@field productions table<string, table<integer, Request>>    @ (product name) => (id device) => (Request)
----@field connected_network SurfaceNetwork
----@field connecting_trainstops LuaEntity[]
----@field connecting_outputs LuaEntity[]
+---@field connected_network SurfaceNetwork                      @ connection to other space exploration surface
+---@field connecting_trainstops LuaEntity[]                     @ connection to other space exploration surface
+---@field connecting_outputs LuaEntity[]                        @ connection to other space exploration surface
 ---@field connection_index integer                              @ Last selected connection
 ---@field connecting_ids table<string, boolean>
 ---@field is_orbit boolean

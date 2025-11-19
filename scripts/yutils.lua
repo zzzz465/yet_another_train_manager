@@ -448,7 +448,12 @@ function yutils.has_fuel(train, min_time)
                 if burner then
                     fuel_value = fuel_value + burner.remaining_burning_fuel
                 end
-                if fuel_value < energy_usage then return false end
+                if fuel_value < energy_usage then 
+                    if loco.burner.fuel_categories.electronic then
+                        return true
+                    end
+                    return false 
+                end
 
                 local bri = loco.get_burnt_result_inventory()
                 if bri and #bri > 0 and bri.is_full() then
@@ -822,7 +827,7 @@ function yutils.check_refuel(train)
     if not train.has_fuel then
         local network = yutils.get_network(train.front_stock)
         local refueler = yutils.find_refueler(network, train)
-        if not refueler and network.connected_network then
+        if not refueler and network.connected_network and commons.se_enabled then
             refueler = yutils.find_refueler(network.connected_network, train)
         end
         if refueler then
