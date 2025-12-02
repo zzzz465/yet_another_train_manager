@@ -129,11 +129,10 @@ function multisurf.init_se(context, force)
     end
 end
 
-local se_on_train_teleport_finished_event 
+local se_on_train_teleport_finished_event
 local se_on_train_teleport_started_event
 
 function multisurf.register_se()
-
     if not USE_SE then
         return
     end
@@ -144,6 +143,15 @@ function multisurf.register_se()
     script.on_event(se_on_train_teleport_finished_event, on_train_teleport_finished)
     script.on_event(se_on_train_teleport_started_event, on_train_teleport_started)
 end
+
+local rail_types = {
+    "curved-rail-a",
+    "curved-rail-b",
+    "legacy-curved-rail",
+    "legacy-straight-rail",
+    "rail-ramp",
+    "straight-rail"
+}
 
 ---@param network SurfaceNetwork
 ---@return boolean
@@ -161,9 +169,26 @@ local function connect(network)
     local outputs = {}
     for _, ts in pairs(trainstops) do
         local position = ts.position
-        local entities = ts.surface.find_entities_filtered { type = "curved-rail", position = { position.x - 14, position.y + 12 } }
-        if #entities == 1 then
-            table.insert(outputs, entities[1])
+        local rail_pos = { x=position.x - 18, y=position.y + 13 }
+
+        local entities = ts.surface.find_entities_filtered { 
+            type = rail_types, 
+            area = {{rail_pos.x - 10, rail_pos.y - 5}, {rail_pos.x + 3, rail_pos.y + 5} }
+        }
+        if #entities ~= 0 then
+            local found
+            local foundd
+            for _, entity in pairs(entities) do
+                local pos = entity.position
+                local dx = pos.x - rail_pos.x
+                local dy = pos.y - rail_pos.y
+                local d = dx*dx + dy*dy
+                if not foundd or d < foundd then
+                    found = entity
+                    foundd = d
+                end
+            end
+            table.insert(outputs, found)
         else
             table.insert(outputs, nil)
         end
@@ -259,7 +284,7 @@ local function update_network(entity)
 end
 
 ---@param e LuaEntity
-function multisurf.add_elevator(e) 
+function multisurf.add_elevator(e)
     update_network(e)
 end
 

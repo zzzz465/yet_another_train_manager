@@ -56,6 +56,7 @@ end
 ---@param sign integer?
 ---@param operation integer  -- oper_loading / oper_unloading
 local function set_device_output(device, content, train, sign, operation)
+
     if not device.out_red.valid then return end
 
     if not sign then sign = 1 end

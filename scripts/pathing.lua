@@ -3,6 +3,7 @@ local commons = require("scripts.commons")
 local Runtime = require("scripts.runtime")
 local pathingd = require("scripts.pathingd")
 local config = require("scripts.config")
+local multisurf = require("scripts.multisurf")
 
 local pathing = {}
 
@@ -177,6 +178,9 @@ function pathing.find_closest_incoming_rail(device)
     local index = 1
     local min
     local min_index
+    if table_size(network.connecting_outputs) == 0 then
+        multisurf.try_connect_network(network)
+    end
     for _, output in pairs(network.connecting_outputs) do
         local dist
         if output and output.valid then

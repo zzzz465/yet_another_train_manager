@@ -1183,10 +1183,7 @@ function tools.id_to_filter(signalid)
     local type, name = split()
     local comparator, quality = split() 
     if not type or type == "item" then
-        if not quality or quality == "normal" then
-            return name
-        end
-        return { type = "item", name = name, comparator = comparator or "=", quality = quality }
+        return { type = "item", name = name, comparator = comparator or "=", quality = quality or "normal" }
     end
     return { type = type, name = name, comparator="=", quality="normal" }
 end

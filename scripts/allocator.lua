@@ -152,47 +152,49 @@ function allocator.find_free_depot(network, train, device, is_parking)
             if not index then return nil end
 
             local output = connected_network.connecting_outputs[index]
-            local id = -output.unit_number
-            min_priority = nil
-            for _, depot in pairs(connected_network.free_depots) do
-                if depot.train == nil then
-                    local d
-                    if device.distance_cache then
-                        d = device.distance_cache[id]
-                    end
-                    if not d then
-                        if not depot.trainstop.connected_rail then
+            if output and output.valid then
+                local id = -output.unit_number
+                min_priority = nil
+                for _, depot in pairs(connected_network.free_depots) do
+                    if depot.train == nil then
+                        local d
+                        if device.distance_cache then
+                            d = device.distance_cache[id]
+                        end
+                        if not d then
+                            if not depot.trainstop.connected_rail then
+                                goto skip
+                            end
+                            d = Pathing.rail_device_distance(output, depot)
+                        end
+                        if d < 0 then
                             goto skip
                         end
-                        d = Pathing.rail_device_distance(output, depot)
-                    end
-                    if d < 0 then
-                        goto skip
-                    end
-                    if depot.role == builder_role then
-                        d = d + builder_penalty
-                    end
-                    if min_priority then
-                        if min_priority > depot.priority then
-                            depot.failcode = 61
-                            goto skip
-                        elseif min_priority == depot.priority and d > min_d then
-                            depot.failcode = 62
-                            goto skip
+                        if depot.role == builder_role then
+                            d = d + builder_penalty
+                        end
+                        if min_priority then
+                            if min_priority > depot.priority then
+                                depot.failcode = 61
+                                goto skip
+                            elseif min_priority == depot.priority and d > min_d then
+                                depot.failcode = 62
+                                goto skip
+                            end
+                        end
+                        if check_depot(depot) then
+                            min_depot = depot
+                            min_d = d
+                            min_priority = depot.priority
                         end
                     end
-                    if check_depot(depot) then
-                        min_depot = depot
-                        min_d = d
-                        min_priority = depot.priority
-                    end
+                    ::skip::
                 end
-                ::skip::
-            end
 
-            if min_depot then
-                min_depot.last_used_date = game.tick
-                return min_depot
+                if min_depot then
+                    min_depot.last_used_date = game.tick
+                    return min_depot
+                end
             end
         end
 
@@ -554,20 +556,22 @@ function allocator.find_train(device, patterns, is_item)
         local se_index = Pathing.find_closest_incoming_rail(device)
         if se_index then
             local se_trainstop = se_network.connecting_trainstops[se_index]
+            if se_trainstop and se_trainstop.valid then
+                
+                --- Reset variable
+                dst_id = se_trainstop.unit_number
+                dst_position = se_trainstop.position
+                f_trainstop_distance = function(candidate)
+                    return Pathing.device_trainstop_distance(candidate, se_trainstop)
+                end
+                f_train_distance = function(train)
+                    return Pathing.train_trainstop_distance(train, se_trainstop)
+                end
 
-            --- Reset variable
-            dst_id = se_trainstop.unit_number
-            dst_position = se_trainstop.position
-            f_trainstop_distance = function(candidate)
-                return Pathing.device_trainstop_distance(candidate, se_trainstop)
-            end
-            f_train_distance = function(train)
-                return Pathing.train_trainstop_distance(train, se_trainstop)
-            end
-
-            find_train_in_network(se_network)
-            if min_train then
-                return min_train
+                find_train_in_network(se_network)
+                if min_train then
+                    return min_train
+                end
             end
         end
     end
@@ -636,7 +640,7 @@ function allocator.builder_is_available(builder)
     if inv then
         local content = inv.get_contents()
         local content_map = {}
-        for _, item in pairs(content) do 
+        for _, item in pairs(content) do
             local key = item.name
             if item.quality and item.quality ~= "normal" then
                 key = key .. "/" .. item.quality
