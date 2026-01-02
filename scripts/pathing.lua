@@ -114,7 +114,7 @@ function pathing.device_distance(from_device, to_device)
         return -1
     end
     local direction = ptrainstop.connected_rail_direction
-z    path_request.starts = {
+    path_request.starts = {
         {
             rail = connected_rail,
             direction = direction
