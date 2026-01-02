@@ -45,7 +45,8 @@ function pathing.device_trainstop_distance(from_device, to_trainstop)
                 rail = rail,
                 direction = opposite(direction)
             } },
-        steps_limit = steps_limit
+        steps_limit = steps_limit,
+        shortest_path = true
     }
     local result = game.train_manager.request_train_path(path_request)
     local dist
@@ -69,7 +70,8 @@ function pathing.rail_device_distance(rail, to_device)
     local path_request = {
         type = request_type,
         goals = { { train_stop = to_device.trainstop } },
-        steps_limit = steps_limit
+        steps_limit = steps_limit,
+        shortest_path = true
     }
     path_request.starts = { {
         rail = rail,
@@ -102,7 +104,8 @@ function pathing.device_distance(from_device, to_device)
     local path_request = {
         type = request_type,
         goals = { { train_stop = to_device.trainstop } },
-        steps_limit = steps_limit
+        steps_limit = steps_limit,
+        shortest_path = true
     }
     local ptrainstop = from_device.trainstop
     local dist
@@ -111,7 +114,7 @@ function pathing.device_distance(from_device, to_device)
         return -1
     end
     local direction = ptrainstop.connected_rail_direction
-    path_request.starts = {
+z    path_request.starts = {
         {
             rail = connected_rail,
             direction = direction
@@ -142,7 +145,8 @@ function pathing.train_distance(train, to_device)
         type = request_type,
         goals = { { train_stop = to_device.trainstop } },
         train = train.train,
-        steps_limit = steps_limit
+        steps_limit = steps_limit,
+        shortest_path = true
     }
     path_request.train = train.train
     local result = game.train_manager.request_train_path(path_request)
@@ -160,7 +164,8 @@ function pathing.train_trainstop_distance(train, trainstop)
         type = request_type,
         goals = { { train_stop = trainstop } },
         train = train.train,
-        steps_limit = steps_limit
+        steps_limit = steps_limit,
+        shortest_path = true
     }
     path_request.train = train.train
     local result = game.train_manager.request_train_path(path_request)

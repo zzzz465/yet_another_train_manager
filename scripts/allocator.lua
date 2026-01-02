@@ -253,11 +253,11 @@ end
 
 local device_distance = Pathing.device_distance
 
----@param device Device
+---@param candidate_device Device
 ---@param patterns {[string]:boolean}?
 ---@param is_item boolean?
-function allocator.find_train(device, patterns, is_item)
-    local network = device.network
+function allocator.find_train(candidate_device, patterns, is_item)
+    local network = candidate_device.network
 
     local min_dist
     local min_priority
@@ -267,13 +267,13 @@ function allocator.find_train(device, patterns, is_item)
 
     local pending_trains = {}
 
-    local dst_id = device.id
-    local dst_position = device.position
+    local dst_id = candidate_device.id
+    local dst_position = candidate_device.position
     local f_trainstop_distance = function(candidate)
-        return device_distance(candidate, device)
+        return device_distance(candidate, candidate_device)
     end
     local f_train_distance = function(train)
-        return Pathing.train_distance(train, device)
+        return Pathing.train_distance(train, candidate_device)
     end
 
     ---@param candidate Device
@@ -310,7 +310,7 @@ function allocator.find_train(device, patterns, is_item)
                 end
                 if d < 0 then
                     candidate.failcode = 80
-                    device.failcode = 80
+                    candidate_device.failcode = 80
                     goto skip
                 end
 
@@ -338,7 +338,7 @@ function allocator.find_train(device, patterns, is_item)
 
                 if patterns and not (patterns[train.gpattern] or patterns[train.rpattern]) then
                     candidate.failcode = 22
-                    device.failcode = device.failcode or candidate.failcode
+                    candidate_device.failcode = candidate_device.failcode or candidate.failcode
                     goto skip
                 end
 
@@ -360,8 +360,8 @@ function allocator.find_train(device, patterns, is_item)
 
                 if need_teleporter then
                     local found
-                    if device.network.teleporters then
-                        for _, teleporter in pairs(device.network.teleporters) do
+                    if candidate_device.network.teleporters then
+                        for _, teleporter in pairs(candidate_device.network.teleporters) do
                             local tpatterns = teleporter.dconfig.patterns
                             if not tpatterns or tpatterns[train.gpattern] or tpatterns[train.rpattern] then
                                 found = teleport
@@ -553,7 +553,7 @@ function allocator.find_train(device, patterns, is_item)
     -- switch to connected netwok
     local se_network = network.connected_network
     if se_network and commons.se_enabled then
-        local se_index = Pathing.find_closest_incoming_rail(device)
+        local se_index = Pathing.find_closest_incoming_rail(candidate_device)
         if se_index then
             local se_trainstop = se_network.connecting_trainstops[se_index]
             if se_trainstop and se_trainstop.valid then
@@ -576,7 +576,7 @@ function allocator.find_train(device, patterns, is_item)
         end
     end
 
-    if device.teleporter_in_range and not device.teleporter_in_range.inactive then
+    if candidate_device.teleporter_in_range and not candidate_device.teleporter_in_range.inactive then
         local context = yutils.get_context()
         need_teleporter = true
         for _, candidate_network in pairs(context.networks[network.force_index]) do
@@ -599,7 +599,7 @@ function allocator.find_train(device, patterns, is_item)
         end
     end
 
-    device.failcode = device.failcode or 22
+    candidate_device.failcode = candidate_device.failcode or 22
     return nil
 end
 

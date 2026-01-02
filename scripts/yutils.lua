@@ -824,6 +824,7 @@ end
 ---@param train Train
 function yutils.check_refuel(train)
     yutils.read_train_internals(train)
+    train.timeout_tick = nil
     if not train.has_fuel then
         local network = yutils.get_network(train.front_stock)
         local refueler = yutils.find_refueler(network, train)
@@ -834,7 +835,6 @@ function yutils.check_refuel(train)
             refueler.train = train
             train.state = defs.train_states.to_refueler
             train.refueler = refueler
-            train.timeout_tick = nil
 
             -- free depot
             if train.depot and train.depot.role == depot_role then

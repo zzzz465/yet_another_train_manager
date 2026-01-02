@@ -85,7 +85,7 @@ data:extend({
         type = "int-setting",
         name = "yaltn-delivery_timeout",
 		setting_type = "runtime-global",
-        default_value = 60,
+        default_value = 300,
 		order="al"
     },
     {
