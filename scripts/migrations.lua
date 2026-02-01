@@ -215,23 +215,7 @@ local function fix_device(device)
     if device.parking_penalty then
         device.parking_penalty = nil
         device.is_parking = true
-    end
-
-    local dconfig = device.dconfig
-    if dconfig then
-        if dconfig.red_wire_as_stock then
-            dconfig.red_wire_mode = 2
-        else
-            dconfig.red_wire_mode = 1
-        end
-        dconfig.red_wire_as_stock = nil
-    end
-
-    if device.red_wire_as_stock then
-        device.red_wire_mode = 2
-    else
-        device.red_wire_mode = 1
-    end
+   end
 end
 
 ---@param network SurfaceNetwork
