@@ -323,8 +323,15 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
             if existing_content then
                 count = count + (existing_content[name] or 0)
             end
+
+            local record_type
+            if string.find(signal.name, "^yaltn[-]generic[-]") then
+                record_type = "circuit"
+            else
+                record_type = signal.type .. "_count"
+            end
             table.insert(load_condition, {
-                type = signal.type .. "_count",
+                type = record_type,
                 compare_type = "and",
                 condition = {
                     comparator = ">=",
@@ -508,8 +515,16 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                         constant = 0
                     }
                 end
+
+                local record_type
+                if string.find(signal.name, "^yaltn[-]generic[-]") then
+                    record_type = "circuit"
+                else
+                    record_type = signal.type .. "_count"
+                end
+
                 table.insert(unload_conditions, {
-                    type = signal.type .. "_count",
+                    type = record_type,
                     compare_type = "and",
                     condition = condition
                 })
@@ -564,7 +579,7 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
     if table_size(records) > 0 then
         local schedule = { current = 1, records = records }
 
-    -- schedule = { current = 1, records = { { station = "Temp", wait_conditions = { { type = "empty", compare_type = "and" } } } } }
+        -- schedule = { current = 1, records = { { station = "Temp", wait_conditions = { { type = "empty", compare_type = "and" } } } } }
         train.train.schedule = schedule
     end
 end
