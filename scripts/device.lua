@@ -1059,18 +1059,33 @@ local function process_device(device)
             end
         end
 
-        if device.red_wire_mode == 2 then
+        if commons.red_wire_stock_commands[device.red_wire_mode] then
             local network_mask = device.network_mask
             local network = device.network
 
             local items = {}
-            for name, pmap in pairs(network.productions) do
-                for _, product in pairs(pmap) do
-                    if band(product.device.network_mask, network_mask) ~= 0 then
-                        items[name] = (items[name] or 0) + (product.provided - product.requested)
+            if device.red_wire_mode == commons.red_wire_stock then
+                for name, pmap in pairs(network.productions) do
+                    for _, product in pairs(pmap) do
+                        if band(product.device.network_mask, network_mask) ~= 0 then
+                            items[name] = (items[name] or 0) + (product.provided - product.requested)
+                        end
+                    end
+                end
+            else
+                for name, pmap in pairs(network.productions) do
+                    for _, product in pairs(pmap) do
+                        if band(product.device.network_mask, network_mask) ~= 0 then
+                            local prev  = (items[name] or 0)
+                            local current = (product.provided - product.requested)
+                            if current > prev then
+                                items[name] = current
+                            end
+                        end
                     end
                 end
             end
+            
             ::end_prod::
             local filters = yutils.build_filters(items, 1)
             if device.out_red.valid then

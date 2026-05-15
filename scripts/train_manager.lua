@@ -118,10 +118,10 @@ local function set_device_output(device, content, train, sign, operation)
 
     local section
     local red_wire_mode = device.red_wire_mode
-    if red_wire_mode == 1 then
+    if red_wire_mode == commons.red_wire_train_content then
         section = (device.out_red.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]).get_section(1)
         section.filters = filters
-    elseif red_wire_mode == 3 or red_wire_mode == 4 then
+    elseif red_wire_mode == commons.red_wire_delivery or red_wire_mode == commons.red_wire_combine_delivery then
         if train then
             local rfilters = {}
             rfilters = apply_train_info(rfilters)
@@ -134,7 +134,7 @@ local function set_device_output(device, content, train, sign, operation)
                         min = count,
                     })
                 end
-                if red_wire_mode == 3 then
+                if red_wire_mode == commons.red_wire_delivery then
                     break
                 else
                     delivery = delivery.combined_delivery
@@ -152,7 +152,7 @@ end
 ---@param device Device
 local function clear_device_output(device)
     if not device then return end
-    if device.red_wire_mode ~= 2 then
+    if commons.red_wire_train_commands[device.red_wire_mode] then
         local cb
         cb = device.out_red.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
         cb.get_section(1).filters = {}

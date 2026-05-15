@@ -603,7 +603,7 @@ function yutils.route_to_refueler(train, device)
     table.insert(records, {
         station = trainstop.backer_name,
         wait_conditions = {
-            { type = "inactivity", compare_type = "and", ticks = 120 }
+            { type = "inactivity", compare_type = "and", ticks = 300 }
         }
     })
 

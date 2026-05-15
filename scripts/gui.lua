@@ -284,7 +284,7 @@ local function create_fields(ftable, device)
     add_boolean_field("combined", use_requester[role], np("combined.tooltip"))
     add_boolean_field("no_remove_constraint", role == defs.device_roles.builder, np("no_remove_constraint.tooltip"))
     add_boolean_field("green_wire_as_priority", use_carry[role], np("green_wire_as_priority.tooltip"))
-    add_dropdown_field("red_wire_mode", use_carry[role], 4, np("red_wire_mode.tooltip"))
+    add_dropdown_field("red_wire_mode", use_carry[role], 5, np("red_wire_mode.tooltip"))
     add_boolean_field("reservation", use_requester[role], np("reservation.tooltip"))
 
     local is_builder = role == defs.device_roles.builder
