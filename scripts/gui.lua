@@ -866,7 +866,7 @@ local function on_gui_opened(e)
         end
     end
 
-    local selected_index = device.dconfig.role + 1
+    local selected_index = (device.dconfig.role or 0) + 1
 
     local flow = inner_frame.add { type = "flow", direction = "horizontal" }
     flow.add { type = "label", caption = { np("mode") } }
