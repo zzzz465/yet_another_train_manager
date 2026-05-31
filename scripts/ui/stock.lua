@@ -23,19 +23,18 @@ local devices
 local devices_runtime
 
 
-local slot_internal_color = uiutils.slot_internal_color 
-local slot_provided_color = uiutils.slot_provided_color 
-local slot_requested_color= uiutils.slot_requested_color 
-local slot_transit_color = uiutils.slot_transit_color 
+local slot_internal_color = uiutils.slot_internal_color
+local slot_provided_color = uiutils.slot_provided_color
+local slot_requested_color = uiutils.slot_requested_color
+local slot_transit_color = uiutils.slot_transit_color
 local slot_signal_color = uiutils.slot_signal_color
 
 
 ---@param tabbed_pane LuaGuiElement
 function uistock.create(tabbed_pane)
-
     local tab = tabbed_pane.add {
         type = "tab",
-        caption = {np("stock")}
+        caption = { np("stock") }
     }
     local content = tabbed_pane.add {
         type = "table",
@@ -53,7 +52,6 @@ function uistock.create(tabbed_pane)
     ---------------------------------------
 
     local function create_product_tab(name, cols)
-
         local frame = content.add {
             type = "frame",
             direction = "vertical",
@@ -61,7 +59,7 @@ function uistock.create(tabbed_pane)
         }
         frame.style.padding = 5
 
-        frame.add {type = "label", caption = {np(name)}}
+        frame.add { type = "label", caption = { np(name) } }
 
         local scroll = frame.add {
             type = "scroll-pane",
@@ -92,9 +90,8 @@ function uistock.create(tabbed_pane)
 end
 
 function uistock.update(player)
-
     local provided_table = uiutils.get_child(player, np("provided_table"))
-    local requested_table = uiutils.get_child(player,np("requested_table"))
+    local requested_table = uiutils.get_child(player, np("requested_table"))
     local transit_table = uiutils.get_child(player, np("transit_table"))
     local internals_table = uiutils.get_child(player, np("internals_table"))
 
@@ -109,6 +106,9 @@ function uistock.update(player)
     local transit = {}
     local deliveries = {}
     local internals = {}
+
+    local show_max = settings.get_player_settings(player)["yaltn-show_max_in_stock"].value
+
     if signal_filter then
         local filter_id = signal_filter
         for _, device in pairs(devices) do
@@ -117,14 +117,28 @@ function uistock.update(player)
                 if r then
                     local count = r.provided - r.requested
                     if count > 0 then
-                        provided[filter_id] = (provided[filter_id] or 0) + count
+                        local current = provided[filter_id] or 0
+                        if show_max then
+                            if count > current then
+                                provided[filter_id] = count
+                            end
+                        else
+                            provided[filter_id] = count + current
+                        end
                     end
                 end
                 r = device.requested_items[filter_id]
                 if r then
                     local count = r.requested - r.provided
                     if count >= r.threshold then
-                        requested[filter_id] = (requested[filter_id] or 0) + count
+                        local current = requested[filter_id] or 0
+                        if show_max then
+                            if count > current then
+                                requested[filter_id] = count
+                            end
+                        else
+                            requested[filter_id] = current + count
+                        end
                     end
                 end
                 for _, d in pairs(device.deliveries) do
@@ -144,20 +158,33 @@ function uistock.update(player)
                 end
             end
         end
-
     else
         for _, device in pairs(devices) do
             if device.dconfig and not device.inactive and filter(device) then
                 for name, r in pairs(device.produced_items) do
                     local count = r.provided - r.requested
                     if count > 0 then
-                        provided[name] = (provided[name] or 0) + count
+                        local current = provided[name] or 0
+                        if show_max then
+                            if count > current then
+                                provided[name] = count
+                            end
+                        else
+                            provided[name] = count + current
+                        end
                     end
                 end
                 for name, r in pairs(device.requested_items) do
                     local count = r.requested - r.provided
                     if count >= r.threshold then
-                        requested[name] = (requested[name] or 0) + count
+                        local current = requested[name] or 0
+                        if show_max then
+                            if count > current then
+                                requested[name] = count
+                            end
+                        else
+                            requested[name] = current + count
+                        end
                     end
                 end
                 for _, d in pairs(device.deliveries) do
@@ -185,7 +212,7 @@ function uistock.update(player)
     internals_table.clear()
 
     uistock.display_products(provided, provided_table, slot_provided_color)
-    uistock.display_products(requested, requested_table, slot_requested_color, uiutils.np("product_button_requested"))
+    uistock.display_products(requested, requested_table, slot_requested_color, uiutils.np("product_button_requested"), provided)
     uistock.display_products(transit, transit_table, slot_transit_color)
     uistock.display_products(internals, internals_table, slot_internal_color)
 end
@@ -196,10 +223,10 @@ local sort_products = uiutils.sort_products
 ---@param container LuaGuiElement
 ---@param style string
 ---@param handler_name string?
-function uistock.display_products(products, container, style, handler_name)
-
+---@param stock_map {[string]:number}?
+function uistock.display_products(products, container, style, handler_name, stock_map)
     local sorted_products = sort_products(products)
-    uiutils.display_products(container, sorted_products, style, np("tooltip-item"), handler_name)
+    uiutils.display_products(container, sorted_products, style, np("tooltip-item"), handler_name, nil, stock_map)
 end
 
 local function on_load()

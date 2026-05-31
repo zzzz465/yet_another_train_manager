@@ -239,6 +239,13 @@ data:extend({
             order="al",
             default_value = 50
         }, 
+        {
+            type = "bool-setting",
+            name = "yaltn-show_max_in_stock",
+            setting_type = "runtime-per-user",
+            order="al2",
+            default_value = true
+        }, 
         
         {
             type = "int-setting",

@@ -308,10 +308,12 @@ end
 ---@class display_product_args
 ---@field container LuaGuiElement
 ---@field signal SignalFilter
+---@field product_name string
 ---@field count number
 ---@field style string
 ---@field handler_name string?
 ---@field handler_tags Tags?
+---@field stock_count number?
 
 ---@param args display_product_args
 function uiutils.display_product(args)
@@ -331,23 +333,36 @@ function uiutils.display_product(args)
 
     sprite_name = tools.signal_to_sprite(signal)
     local formatted = luautil.format_number(args.count, true)
-    if not tooltip then
-        tooltip = np("tooltip-item")
-    end
+    local tooltip_pattern = np("tooltip-item")
     local quality_sprite = ""
     if signal.quality and signal.quality ~= "normal" then
         quality_sprite = "[quality=" .. signal.quality .. "]"
     end
+
+    local tooltip
+    if args.stock_count then
+        local formatted_stock_count = luautil.format_number(args.stock_count, true)
+        tooltip = { np("tooltip-item-with-stock"), 
+            formatted,
+            "[img=" .. sprite_name .. "]" .. quality_sprite, 
+            { "", "[color=cyan]", proto.localised_name, "[/color]" } ,
+            formatted_stock_count
+        }
+    else
+        tooltip = { np("tooltip-item"), 
+            formatted,
+            "[img=" .. sprite_name .. "]" .. quality_sprite, { "", "[color=cyan]", proto.localised_name, "[/color]" } }
+    end
+
     button = args.container.add {
         type = "choose-elem-button",
         style = args.style,
         elem_type = "signal",
-        tooltip = { args.tooltip, formatted,
-            "[img=" .. sprite_name .. "]" .. quality_sprite, { "", "[color=cyan]", proto.localised_name, "[/color]" } }
+        tooltip = tooltip
     }
+
     button.locked = true
     button.elem_value = signal
-
     tools.set_name_handler(button, args.handler_name, args.handler_tags)
     local label = button.add {
         type = "label",
@@ -367,7 +382,8 @@ local display_product = uiutils.display_product
 ---@param tooltip string
 ---@param handler_name string?
 ---@param handler_tags Tags?
-function uiutils.display_products(container, sorted_products, style, tooltip, handler_name, handler_tags)
+---@param stock_map {[string]:number}?
+function uiutils.display_products(container, sorted_products, style, tooltip, handler_name, handler_tags, stock_map)
     if not handler_name then handler_name = np("product_button") end
 
     ---@type display_product_args
@@ -383,6 +399,10 @@ function uiutils.display_products(container, sorted_products, style, tooltip, ha
         local signal = tools.id_to_signal(name)
         args.signal = signal
         args.count = count
+        args.product_name = name
+        if stock_map then
+            args.stock_count = stock_map[name]
+        end
         ---@cast signal -nil
         display_product(args)
     end
