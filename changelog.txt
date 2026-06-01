@@ -5,6 +5,7 @@ Date: 15.04.2026
     - Lower the cost of the technology for pyanodon mods
     - Add "Max available item/fluid" ouput on red wire
     - Add generic fluid to match multiple fluid in stock
+    - Add stock in request display
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.21
 Date: 01.02.2026
