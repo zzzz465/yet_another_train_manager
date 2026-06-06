@@ -195,3 +195,12 @@ local ebuffer = {
 }
 
 data:extend { ebuffer }
+
+
+data:extend {
+	{
+		type = "custom-input",
+		name = prefix .. "-uiopen",
+		key_sequence = "ALT + O",
+		consuming = "game-only"
+	} }

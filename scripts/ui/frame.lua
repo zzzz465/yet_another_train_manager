@@ -493,7 +493,7 @@ tools.on_nth_tick(60, function(e)
     local tick = game.tick
     for player_index, vars in pairs(storage.players) do
         local player = game.players[player_index]
-        local vars = tools.get_vars(player)
+        if not player then goto skip end
         local refresh_rate = vars.ui_refresh_rate
         if not refresh_rate or refresh_rate == refresh_rate_none then
             goto skip
@@ -678,5 +678,12 @@ uiutils.hide = uiframe.hide
 uiutils.update = uiframe.update
 uiutils.show_tab = uiframe.show_tab
 uiutils.set_signal_filter = uiframe.set_signal_filter
+
+script.on_event(prefix .. "-uiopen", function(e)
+    local player = game.players[e.player_index]
+    open(player)
+end
+)
+
 
 return uiframe

@@ -107,7 +107,10 @@ function tools.close_ui(unit_number, close_proc, field)
         local selected = vars[field]
         if selected and selected.valid and selected.unit_number == unit_number then
             vars.selected = nil
-            close_proc(game.players[index])
+            local player = game.players[index]
+            if player then
+                close_proc(player)
+            end
             return
         end
     end
@@ -1180,10 +1183,7 @@ function tools.id_to_filter(signalid)
     local type, name = split()
     local comparator, quality = split() 
     if not type or type == "item" then
-        if not quality or quality == "normal" then
-            return name
-        end
-        return { type = "item", name = name, comparator = comparator or "=", quality = quality }
+        return { type = "item", name = name, comparator = comparator or "=", quality = quality or "normal" }
     end
     return { type = type, name = name, comparator="=", quality="normal" }
 end

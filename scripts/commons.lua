@@ -33,6 +33,7 @@ local commons = {
 
     se_elevator_name = "se-space-elevator",
     se_elevator_trainstop_name = "se-space-elevator-train-stop",
+    se_enabled = true,
 
     colors = {
         black = 1,
@@ -73,8 +74,25 @@ local commons = {
     layout_font = prefix .. "_layout",
 
     gui_frame_name = prefix .. "-frame",
-    modal_mask_name = prefix .. "-modal_mask"
+    modal_mask_name = prefix .. "-modal_mask",
 
+    red_wire_train_content = 1,
+    red_wire_stock = 2,
+    red_wire_delivery = 3,
+    red_wire_combine_delivery = 4,
+    red_wire_stock_max = 5,
+}
+
+
+commons.red_wire_train_commands = {
+    [commons.red_wire_train_content] = true,
+    [commons.red_wire_delivery] = true,
+    [commons.red_wire_combine_delivery] = true
+}
+
+commons.red_wire_stock_commands = {
+    [commons.red_wire_stock] = true,
+    [commons.red_wire_stock_max] = true,
 }
 
 commons.generic_to_sprite = {

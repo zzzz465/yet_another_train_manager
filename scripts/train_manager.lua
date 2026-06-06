@@ -54,8 +54,9 @@ end
 ---@param content table<string, integer> ?
 ---@param train Train?
 ---@param sign integer?
----@param operation integer
+---@param operation integer  -- oper_loading / oper_unloading
 local function set_device_output(device, content, train, sign, operation)
+
     if not device.out_red.valid then return end
 
     if not sign then sign = 1 end
@@ -117,10 +118,10 @@ local function set_device_output(device, content, train, sign, operation)
 
     local section
     local red_wire_mode = device.red_wire_mode
-    if red_wire_mode == 1 then
+    if red_wire_mode == commons.red_wire_train_content then
         section = (device.out_red.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]).get_section(1)
         section.filters = filters
-    elseif red_wire_mode == 3 or red_wire_mode == 4 then
+    elseif red_wire_mode == commons.red_wire_delivery or red_wire_mode == commons.red_wire_combine_delivery then
         if train then
             local rfilters = {}
             rfilters = apply_train_info(rfilters)
@@ -133,7 +134,7 @@ local function set_device_output(device, content, train, sign, operation)
                         min = count,
                     })
                 end
-                if red_wire_mode == 3 then
+                if red_wire_mode == commons.red_wire_delivery then
                     break
                 else
                     delivery = delivery.combined_delivery
@@ -151,7 +152,7 @@ end
 ---@param device Device
 local function clear_device_output(device)
     if not device then return end
-    if device.red_wire_mode ~= 2 then
+    if commons.red_wire_train_commands[device.red_wire_mode] then
         local cb
         cb = device.out_red.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
         cb.get_section(1).filters = {}
@@ -277,6 +278,7 @@ local function try_combine_request(train, delivery)
         if requested < request.threshold then goto skip end
 
         delivery = train.delivery
+        if not delivery then return nil end
         while delivery do
             if delivery.content[request.name] then
                 goto skip
@@ -388,7 +390,13 @@ local function on_train_changed_state(event)
                                     local train_contents = yutils.get_train_content(train)
                                     target_content = {}
                                     for name, count in pairs(delivery.content) do
-                                        target_content[name] = (train_contents[name] or 0) + count
+                                        local current = train_contents[name]
+                                        if current and current >= count then
+                                            --- adjust to avoid unloading if qty in train >= qty in delivery
+                                            target_content[name] = 4000000
+                                        else 
+                                            target_content[name] = (current or 0) + count
+                                        end
                                     end
                                     set_device_output(delivery.provider, target_content, train, -1, oper_loading)
                                 else
@@ -546,6 +554,7 @@ local function on_train_changed_state(event)
         if train then
             if train.state == defs.train_states.loading then
                 local delivery = train.delivery
+                if not delivery then return end
 
                 if delivery.provider.main_controller then
                     remote.call("transfert_controller", "fire_train_leave", delivery.provider.main_controller)
@@ -599,6 +608,7 @@ local function on_train_changed_state(event)
                 return
             elseif train.state == defs.train_states.unloading then
                 local delivery = train.delivery
+                if not delivery then return end
 
                 if buffer_feeder_roles[delivery.provider.role] and
                     delivery.provider.train == train then

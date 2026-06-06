@@ -10,6 +10,7 @@ local teleport = require("scripts.teleport")
 local trainconf = require("scripts.trainconf")
 local logger = require("scripts.logger")
 local trainstats = require("scripts.trainstats")
+local scheduler = require("scripts.scheduler")
 
 ------------------------------------------------------
 local device_manager = {}
@@ -61,6 +62,9 @@ local train_count_signal = tools.build_virtual_signal(commons.prefix .. "-train_
 
 local item_slot_count = settings.startup[prefix .. "-item_slot_count"].value
 
+-- reroute train when a delivery is cancelled
+local reroute_train = scheduler.reroute_train
+
 -----------------------------------------------------
 
 ---@param device Device
@@ -73,33 +77,6 @@ local function clear_train_stop(device)
     end
 end
 
--- reroute train when a delivery is cancelled
----@param train Train
-local function reroute_train(train)
-    if train and train.train.valid and not train.train.manual_mode then
-        train.delivery = nil
-        local train_network = yutils.get_network(train.front_stock)
-        local depot = allocator.find_free_depot(train_network, train)
-
-        -- case depot
-        if train.depot then
-            if depot_roles[train.depot.role] then
-                yutils.unlink_train_from_depots(train.depot, train)
-            end
-        end
-        if depot then
-            if depot.role == depot_role or depot.role == builder_role then
-                yutils.link_train_to_depot(depot, train)
-                train.state = defs.train_states.to_depot
-                read_train_internals(train)
-                allocator.route_to_station(train, depot)
-            end
-        else
-            logger.report_depot_not_found(train.network, train)
-            train.train.manual_mode = true
-        end
-    end
-end
 
 ---@param device Device
 local function clear_device(device)
@@ -886,6 +863,14 @@ local function process_device(device)
                         end
                         goto skip
                     end
+
+                    local internal_requests = device.internal_requests
+                    if internal_requests and internal_requests[name] and device.produced_items[name] then
+                        local production = device.produced_items[name]
+                        production.provided = 0
+                        yutils.remove_production(production)
+                    end
+
                     count = -count
 
                     local threshold = threshold_map[name] or default_threshold
@@ -1074,28 +1059,39 @@ local function process_device(device)
             end
         end
 
-        if device.red_wire_mode == 2 then
+        if commons.red_wire_stock_commands[device.red_wire_mode] then
             local network_mask = device.network_mask
             local network = device.network
 
             local items = {}
-            local count = 0
-            for name, pmap in pairs(network.productions) do
-                for _, product in pairs(pmap) do
-                    if band(product.device.network_mask, network_mask) ~= 0 then
-                        items[name] = (items[name] or 0) + (product.provided - product.requested)
-                        count = count + 1
-                        if count >= item_slot_count then
-                            goto end_prod
+            if device.red_wire_mode == commons.red_wire_stock then
+                for name, pmap in pairs(network.productions) do
+                    for _, product in pairs(pmap) do
+                        if band(product.device.network_mask, network_mask) ~= 0 then
+                            items[name] = (items[name] or 0) + (product.provided - product.requested)
+                        end
+                    end
+                end
+            else
+                for name, pmap in pairs(network.productions) do
+                    for _, product in pairs(pmap) do
+                        if band(product.device.network_mask, network_mask) ~= 0 then
+                            local prev  = (items[name] or 0)
+                            local current = (product.provided - product.requested)
+                            if current > prev then
+                                items[name] = current
+                            end
                         end
                     end
                 end
             end
+            
             ::end_prod::
             local filters = yutils.build_filters(items, 1)
             if device.out_red.valid then
                 local cb = device.out_red.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
-                cb.get_slot(1).filters = filters
+                local section = cb.get_section(1)
+                section.filters = filters
             end
         end
         return
@@ -1126,6 +1122,7 @@ local function process_device(device)
         end
         device.teleport_range = dconfig.teleport_range or config.teleport_range
         device.planet_teleporter = dconfig.planet_teleporter or config.planet_teleporter
+        device.network_mask = dconfig.network_mask or default_network_mask
         read_virtual_signals()
         local trains = device.trainstop.get_train_stop_trains()
         local count = 0

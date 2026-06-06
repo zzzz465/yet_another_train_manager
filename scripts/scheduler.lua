@@ -146,6 +146,7 @@ local function find_provider(request, forbidden, no_surface_change)
         if delivery_count >= 1 then
             if production_device.max_delivery and delivery_count >= production_device.max_delivery then
                 production_device.failcode = 82
+                request.failcode = 82
                 return
             end
 
@@ -246,7 +247,7 @@ local function find_provider(request, forbidden, no_surface_change)
     end
 
     network = network.connected_network
-    if network then
+    if network and commons.se_enabled then
         productions = network.productions[request.name]
         if not productions or not next(productions) then
             return
@@ -283,9 +284,11 @@ local function find_provider(request, forbidden, no_surface_change)
             if candidate_network ~= network then
                 local productions = candidate_network.productions[request.name]
 
-                for _, production in pairs(productions) do
-                    if production.device.teleporter_in_range and not production.device.teleporter_in_range.inactive then
-                        check_production(production, 0)
+                if productions then
+                    for _, production in pairs(productions) do
+                        if production.device.teleporter_in_range and not production.device.teleporter_in_range.inactive then
+                            check_production(production, 0)
+                        end
                     end
                 end
             end
@@ -299,6 +302,7 @@ scheduler.find_provider = find_provider
 
 ---@param delivery Delivery
 ---@param existing_content table<string, integer>
+---@return boolean?
 function scheduler.create_delivery_schedule(delivery, existing_content)
     local provider = delivery.provider
     local requester = delivery.requester
@@ -320,8 +324,15 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
             if existing_content then
                 count = count + (existing_content[name] or 0)
             end
+
+            local record_type
+            if string.find(signal.name, "^yaltn[-]generic[-]") then
+                record_type = "circuit"
+            else
+                record_type = signal.type .. "_count"
+            end
             table.insert(load_condition, {
-                type = signal.type .. "_count",
+                type = record_type,
                 compare_type = "and",
                 condition = {
                     comparator = ">=",
@@ -352,15 +363,20 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                 table.insert(splitted_schedule, records)
                 records = {}
             end
-            teleport.add_teleporter(provider.network, train_pos, provider.position, records)
+            teleport.add_teleporter(provider.network, train_pos, provider.position, records, nil, train)
         else
             if train.front_stock.surface_index ~= provider.network.surface_index then
                 local src_network = yutils.get_context().networks[train.front_stock.force_index][train.front_stock.surface_index]
-                
+
                 table.insert(splitted_schedule, records)
-                records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network)
+                records = teleport.add_teleporter(src_network, train_pos, provider.position, records, provider.network, train)
+                if not records then
+                    yutils.cancel_delivery(delivery)
+                    scheduler.reroute_train(train)
+                    return true
+                end
             else
-                teleport.add_teleporter(provider.network, train_pos, provider.position, records)
+                teleport.add_teleporter(provider.network, train_pos, provider.position, records, nil, train)
             end
         end
 
@@ -420,13 +436,16 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
     end
 
     if delivery.requester.role ~= buffer_role then
-
         if not provider or requester.network == provider.network then
-            teleport.add_teleporter(requester.network, train_pos, requester.position, records)
+            teleport.add_teleporter(requester.network, train_pos, requester.position, records, nil, train)
         else
-            table.insert(splitted_schedule, records)
-            records = teleport.add_teleporter(provider.network, train_pos, requester.position, records, requester.network)
-            ---@cast records -nil
+            if records and table_size(records) > 0 then
+                table.insert(splitted_schedule, records)
+            end
+            records = teleport.add_teleporter(provider.network, train_pos, requester.position, records, requester.network, train)
+            if not records then
+                records = {}
+            end
         end
 
         local backer_name = requester.trainstop.backer_name
@@ -497,8 +516,16 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                         constant = 0
                     }
                 end
+
+                local record_type
+                if string.find(signal.name, "^yaltn[-]generic[-]") then
+                    record_type = "circuit"
+                else
+                    record_type = signal.type .. "_count"
+                end
+
                 table.insert(unload_conditions, {
-                    type = signal.type .. "_count",
+                    type = record_type,
                     compare_type = "and",
                     condition = condition
                 })
@@ -540,7 +567,9 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
                 }
             })
         end
-        table.insert(splitted_schedule, records)
+        if records and table_size(records) > 0 then
+            table.insert(splitted_schedule, records)
+        end
         records = splitted_schedule[1]
         table.remove(splitted_schedule, 1)
         train.splitted_schedule = splitted_schedule
@@ -548,10 +577,12 @@ function scheduler.create_delivery_schedule(delivery, existing_content)
         train.splitted_schedule = nil
     end
 
-    local schedule = { current = 1, records = records }
+    if table_size(records) > 0 then
+        local schedule = { current = 1, records = records }
 
-    -- schedule = { current = 1, records = { { station = "Temp", wait_conditions = { { type = "empty", compare_type = "and" } } } } }
-    train.train.schedule = schedule
+        -- schedule = { current = 1, records = { { station = "Temp", wait_conditions = { { type = "empty", compare_type = "and" } } } } }
+        train.train.schedule = schedule
+    end
 end
 
 ---@param request Request
@@ -660,7 +691,7 @@ local create_payload = scheduler.create_payload
 ---@param train Train
 ---@param content table<string, integer>
 ---@param existing_content table<string, integer>
----@return Delivery
+---@return Delivery?
 local function create_delivery(request, candidate, train, content, existing_content)
     if tools.tracing then
         debug("create_delivery:" .. request.name .. "=" .. request.requested)
@@ -696,8 +727,9 @@ local function create_delivery(request, candidate, train, content, existing_cont
 
     train.state = defs.train_states.to_producer
     local candidate_device = candidate.device
-    candidate_device.inactivity_delay = nil
-    scheduler.create_delivery_schedule(delivery, existing_content)
+    if scheduler.create_delivery_schedule(delivery, existing_content) then
+        return nil
+    end
 
     if device.network.reservations then
         device.network.reservations[request.name] = nil
@@ -802,7 +834,7 @@ function scheduler.process_request(request)
                 device.network.reservations_tick = context.session_tick
             end
         end
-        if not request.producer_failed_logged then
+        if not request.producer_failed_logged and request.failcode ~= 82 then
             logger.report_producer_notfound(request)
         end
         table.insert(context.waiting_requests, request)
@@ -901,6 +933,7 @@ function scheduler.process_request(request)
     end
 
     ---@cast train -nil
+    train.network_mask = band(device.network_mask, candidate_device.network_mask)
 
     local content = {}
     if buffer_feeder_roles[candidate_device.role] then
@@ -985,5 +1018,33 @@ function scheduler.process(data)
 end
 
 tools.on_nth_tick(5, scheduler.process)
+
+-- reroute train when a delivery is cancelled
+---@param train Train
+function scheduler.reroute_train(train)
+    if train and train.train.valid and not train.train.manual_mode then
+        train.delivery = nil
+        local train_network = yutils.get_network(train.front_stock)
+        local depot = allocator.find_free_depot(train_network, train)
+
+        -- case depot
+        if train.depot then
+            if defs.depot_roles[train.depot.role] then
+                yutils.unlink_train_from_depots(train.depot, train)
+            end
+        end
+        if depot then
+            if depot.role == depot_role or depot.role == commons.builder_role then
+                yutils.link_train_to_depot(depot, train)
+                train.state = defs.train_states.to_depot
+                yutils.read_train_internals(train)
+                allocator.route_to_station(train, depot)
+            end
+        else
+            logger.report_depot_not_found(train.network, train)
+            train.train.manual_mode = true
+        end
+    end
+end
 
 return scheduler

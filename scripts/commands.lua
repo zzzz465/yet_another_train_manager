@@ -29,7 +29,7 @@ local function cmd_disable_network(p)
     local network = yutils.get_network_base(player.force_index, player.surface_index)
     network.disabled = true
     player.print({ "yaltn-messages.command_network_disabled", player.surface.name })
-    if network.connected_network then
+    if network.connected_network and commons.se_enabled then
         network.connected_network.disabled = true
         player.print({ "yaltn-messages.command_network_disabled", game.surfaces[network.connected_network.surface_index].name })
     end
@@ -41,7 +41,7 @@ local function cmd_enable_network(p)
     local network = yutils.get_network_base(player.force_index, player.surface_index)
     network.disabled = false
     player.print({ "yaltn-messages.command_network_enabled", player.surface.name })
-    if network.connected_network then
+    if network.connected_network and commons.se_enabled then
         network.connected_network.disabled = false
         player.print({ "yaltn-messages.command_network_enabled", game.surfaces[network.connected_network.surface_index].name })
     end

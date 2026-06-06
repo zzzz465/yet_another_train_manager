@@ -206,7 +206,7 @@ function uiutils.build_train_filter(player)
     if uiconfig.network_mask and uiconfig.network_mask ~= 0 then
         ---@param train Train
         local cond = function(train)
-            return bit32.band(train.network_mask, uiconfig.network_mask) ~= 0
+            return bit32.band(train.network_mask or 1, uiconfig.network_mask) ~= 0
         end
         table.insert(conditions, cond)
     end
@@ -269,7 +269,7 @@ local order_cache = {}
 function uiutils.get_product_order(name)
     local order = order_cache[name]
     if not order then
-        local signal = tools.id_to_signal(name) 
+        local signal = tools.id_to_signal(name)
         ---@cast signal -nil
         local proto
         if signal.type == "item" then
@@ -305,58 +305,129 @@ function uiutils.sort_products(products)
     return list
 end
 
+---@class display_product_args
+---@field container LuaGuiElement
+---@field signal SignalFilter
+---@field product_name string
+---@field count number
+---@field style string
+---@field handler_name string?
+---@field handler_tags Tags?
+---@field stock_count number?
+
+---@param args display_product_args
+function uiutils.display_product(args)
+    local proto
+    local sprite_name
+    local signal = args.signal
+    local button
+    if signal.type == "item" then
+        proto = prototypes.item[signal.name]
+    elseif signal.type == "fluid" then
+        proto = prototypes.fluid[signal.name]
+    elseif signal.type == "virtual" then
+        proto = prototypes.virtual_signal[signal.name]
+    else
+        return nil
+    end
+
+    sprite_name = tools.signal_to_sprite(signal)
+    local formatted = luautil.format_number(args.count, true)
+    local tooltip_pattern = np("tooltip-item")
+    local quality_sprite = ""
+    if signal.quality and signal.quality ~= "normal" then
+        quality_sprite = "[quality=" .. signal.quality .. "]"
+    end
+
+    local tooltip
+    if args.stock_count then
+        local formatted_stock_count = luautil.format_number(args.stock_count, true)
+        tooltip = { np("tooltip-item-with-stock"), 
+            formatted,
+            "[img=" .. sprite_name .. "]" .. quality_sprite, 
+            { "", "[color=cyan]", proto.localised_name, "[/color]" } ,
+            formatted_stock_count
+        }
+    else
+        tooltip = { np("tooltip-item"), 
+            formatted,
+            "[img=" .. sprite_name .. "]" .. quality_sprite, { "", "[color=cyan]", proto.localised_name, "[/color]" } }
+    end
+
+    button = args.container.add {
+        type = "choose-elem-button",
+        style = args.style,
+        elem_type = "signal",
+        tooltip = tooltip
+    }
+
+    button.locked = true
+    button.elem_value = signal
+    tools.set_name_handler(button, args.handler_name, args.handler_tags)
+    local label = button.add {
+        type = "label",
+        name = "label",
+        style = "yatm_count_label_bottom",
+        ignored_by_interaction = true
+    }
+    label.caption = formatted
+    return button
+end
+
+local display_product = uiutils.display_product
+
 ---@param container LuaGuiElement
 ---@param sorted_products {name:string, count:integer}[]
 ---@param style string
 ---@param tooltip string
 ---@param handler_name string?
 ---@param handler_tags Tags?
-function uiutils.display_products(container, sorted_products, style, tooltip, handler_name, handler_tags)
+---@param stock_map {[string]:number}?
+function uiutils.display_products(container, sorted_products, style, tooltip, handler_name, handler_tags, stock_map)
     if not handler_name then handler_name = np("product_button") end
+
+    ---@type display_product_args
+    local args = {
+        container = container,
+        style = style,
+        tooltip = tooltip,
+        handler_name = handler_name,
+        handler_tags = handler_tags
+    }
     for _, sorted_product in ipairs(sorted_products) do
         local name, count = sorted_product.name, sorted_product.count
         local signal = tools.id_to_signal(name)
-        local proto
+        args.signal = signal
+        args.count = count
+        args.product_name = name
+        if stock_map then
+            args.stock_count = stock_map[name]
+        end
         ---@cast signal -nil
-
-        local sprite_name
-        if signal.type == "item" then
-            proto = prototypes.item[signal.name]
-        elseif signal.type == "fluid" then
-            proto = prototypes.fluid[signal.name]
-        elseif signal.type == "virtual" then
-            proto = prototypes.virtual_signal[signal.name]
-        else
-            goto skip
-        end
-        sprite_name = tools.signal_to_sprite(signal)
-        local formatted = luautil.format_number(count, true)
-        if not tooltip then
-            tooltip = np("tooltip-item")
-        end
-        local quality_sprite = ""
-        if signal.quality and signal.quality ~= "normal" then
-            quality_sprite = "[quality=" .. signal.quality .. "]"
-        end
-        local button = container.add {
-            type = "choose-elem-button",
-            style = style,
-            elem_type = "signal",
-            tooltip = { tooltip, formatted, "[img=" .. sprite_name .. "]" .. quality_sprite, { "", "[color=cyan]", proto.localised_name, "[/color]" } }
-        }
-        button.locked = true
-        button.elem_value = signal
-
-        tools.set_name_handler(button, handler_name, handler_tags)
-        local label = button.add {
-            type = "label",
-            name = "label",
-            style = "yatm_count_label_bottom",
-            ignored_by_interaction = true
-        }
-        label.caption = formatted
-        ::skip::
+        display_product(args)
     end
+end
+
+---@param row LuaGuiElement
+---@param name string
+---@param amount integer
+---@param color string
+---@return LuaGuiElement
+function uiutils.create_product_button(row, name, amount, color)
+    local signal = tools.id_to_signal(name)
+    ---@cast signal -nil
+
+    ---@type display_product_args
+    local args = {
+        container = row,
+        style = color,
+        tooltip = np("tooltip-item"),
+        handler_name = np("product_button"),
+        handler_tags = nil,
+        count = amount,
+        signal = signal
+    }
+    return display_product(args)
 end
 
 uiutils.bkg_style = "deep_frame_in_shallow_frame"
@@ -514,7 +585,7 @@ function uiutils.zoom_to(player, entity, follow)
         end
     end
 
-    player.set_controller{type=defines.controllers.remote, position=entity.position, surface=entity.surface}
+    player.set_controller { type = defines.controllers.remote, position = entity.position, surface = entity.surface }
 end
 
 uiutils.np = np
@@ -596,44 +667,6 @@ function uiutils.create_station_name(content, device, width)
     if width then fname.style.width = width end
     tools.set_name_handler(fname, np("station"), { device = device.id })
     return fname
-end
-
----@param row LuaGuiElement
----@param name string
----@param amount integer
----@param color string
----@return LuaGuiElement
-function uiutils.create_product_button(row, name, amount, color)
-    local signalid = tools.id_to_signal(name)
-    local proto
-    ---@cast signalid -nil
-
-    local sprite_name = name
-    if signalid.type == "item" then
-        proto = prototypes.item[signalid.name]
-    elseif signalid.type == "fluid" then
-        proto = prototypes.fluid[signalid.name]
-    elseif signalid.type == "virtual" then
-        proto = prototypes.virtual_signal[signalid.name]
-        sprite_name = "virtual-signal/" .. signalid.name
-    end
-
-    local formatted = luautil.format_number(amount, true)
-    local button = row.add {
-        type = "sprite-button",
-        sprite = sprite_name,
-        style = color,
-        tooltip = { np("tooltip-item"), formatted, "[img=" .. sprite_name .. "]", { "", "[color=cyan]", proto.localised_name, "[/color]" } }
-    }
-    tools.set_name_handler(button, np("product_button"))
-    local label = button.add {
-        type = "label",
-        name = "label",
-        style = "yatm_count_label_bottom",
-        ignored_by_interaction = true
-    }
-    label.caption = formatted
-    return button
 end
 
 -- #endregion

@@ -85,7 +85,7 @@ data:extend({
         type = "int-setting",
         name = "yaltn-delivery_timeout",
 		setting_type = "runtime-global",
-        default_value = 60,
+        default_value = 300,
 		order="al"
     },
     {
@@ -239,6 +239,13 @@ data:extend({
             order="al",
             default_value = 50
         }, 
+        {
+            type = "bool-setting",
+            name = "yaltn-show_max_in_stock",
+            setting_type = "runtime-per-user",
+            order="al2",
+            default_value = true
+        }, 
         
         {
             type = "int-setting",
@@ -254,6 +261,12 @@ data:extend({
             name = "yaltn-use_direct_distance",
             setting_type = "startup",
             default_value = false
+        },
+        {
+            type = "bool-setting",
+            name = "yaltn-use_teleporter",
+            setting_type = "startup",
+            default_value = true
         }
 })
 

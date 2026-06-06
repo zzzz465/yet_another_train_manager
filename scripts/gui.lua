@@ -35,14 +35,10 @@ local function get_frame(player) return player.gui.screen[frame_name] end
 ---@param player LuaPlayer
 local function close_ui(player)
     local frame = get_frame(player)
-    if frame then frame.destroy() end
+    if frame then 
+        frame.destroy() 
+    end
     tools.get_vars(player).edited_device = nil
-end
-
----@param e EventData.on_gui_closed
-local function on_gui_closed(e)
-    local player = game.get_player(e.player_index) --[[@as LuaPlayer]]
-    close_ui(player)
 end
 
 local use_carry = {
@@ -53,6 +49,17 @@ local use_carry = {
     [defs.device_roles.buffer] = true,
     [defs.device_roles.feeder] = true
 }
+
+local has_network_mask = {
+
+    [defs.device_roles.provider] = true,
+    [defs.device_roles.requester] = true,
+    [defs.device_roles.provider_and_requester] = true,
+    [defs.device_roles.buffer] = true,
+    [defs.device_roles.feeder] = true,
+    [defs.device_roles.teleporter] = true
+}
+
 
 local has_priority = {
 
@@ -86,7 +93,7 @@ local use_provider_not_buffer = {
     [defs.device_roles.provider_and_requester] = true
 }
 
-local use_all_enable = {
+local with_layout_enable = {
 
     [defs.device_roles.provider] = true,
     [defs.device_roles.requester] = true,
@@ -95,7 +102,8 @@ local use_all_enable = {
     [defs.device_roles.depot] = true,
     [defs.device_roles.refueler] = true,
     [defs.device_roles.builder] = true,
-    [defs.device_roles.feeder] = true
+    [defs.device_roles.feeder] = true,
+    [defs.device_roles.teleporter] = true
 }
 
 ---@param ftable LuaGuiElement
@@ -257,7 +265,8 @@ local function create_fields(ftable, device)
     end
 
 
-    create_mask("network_mask", use_carry[role], settings.get_player_settings(ftable.player_index)["yaltn-network_mask_size"].value --[[@as integer]])
+    create_mask("network_mask", has_network_mask[role], 
+            settings.get_player_settings(ftable.player_index)["yaltn-network_mask_size"].value --[[@as integer]])
 
     add_numeric_field("priority", has_priority[role], np("priority-tooltip"), true)
     add_numeric_field("rpriority", role == defs.device_roles.builder, nil, true)
@@ -275,12 +284,12 @@ local function create_fields(ftable, device)
     add_boolean_field("combined", use_requester[role], np("combined.tooltip"))
     add_boolean_field("no_remove_constraint", role == defs.device_roles.builder, np("no_remove_constraint.tooltip"))
     add_boolean_field("green_wire_as_priority", use_carry[role], np("green_wire_as_priority.tooltip"))
-    add_dropdown_field("red_wire_mode", use_carry[role], 4, np("red_wire_mode.tooltip"))
+    add_dropdown_field("red_wire_mode", use_carry[role], 5, np("red_wire_mode.tooltip"))
     add_boolean_field("reservation", use_requester[role], np("reservation.tooltip"))
 
     local is_builder = role == defs.device_roles.builder
     if not is_builder then
-        if use_all_enable[role] then
+        if with_layout_enable[role] then
             ftable.add { type = "label", caption = { np("accepted_layout") } }
 
             local flow1 = ftable.add { type = "flow" }
@@ -780,17 +789,27 @@ tools.on_gui_click(np("threshold_unit"), unit_handler)
 ---@param e EventData.on_gui_opened
 local function on_gui_opened(e)
     local player = game.get_player(e.player_index) --[[@as LuaPlayer]]
+
+    if e.element and e.element.name == frame_name then
+        return
+    end    
+    
     if not (e.entity and e.entity.name == commons.device_name) then
         close_ui(player)
         return
     end
 
-    close_ui(player)
-
-    player.opened = nil
     local device_entity = e.entity
+    local frame
+    frame = get_frame(player)
+    if frame and device_entity and tools.get_vars(player).edited_device == device_entity then
+        return
+    end
+
+    close_ui(player)
     if not device_entity then return end
 
+    player.opened = nil
     local frame = player.gui.screen.add {
         type = "frame",
         direction = 'vertical',
@@ -827,10 +846,7 @@ local function on_gui_opened(e)
         style = "inside_shallow_frame_with_padding"
     }
 
-
     local device = devices[device_entity.unit_number]
-    local selected_index = device.dconfig.role + 1
-
     local items = {
         { np("mode_disabled") },
         { np("mode_depot") },
@@ -840,9 +856,18 @@ local function on_gui_opened(e)
         { np("mode_buffer") },
         { np("mode_refueler") },
         { np("mode_builder") },
-        { np("mode_feeder") },
-        { np("mode_teleporter") }
+        { np("mode_feeder") }
     }
+    if settings.startup["yaltn-use_teleporter"].value then
+        table.insert(items, { np("mode_teleporter") })
+    else
+        if device.dconfig.role == defs.device_roles.teleporter then
+            device.dconfig.role = defs.device_roles.depot
+        end
+    end
+
+    local selected_index = (device.dconfig.role or 0) + 1
+
     local flow = inner_frame.add { type = "flow", direction = "horizontal" }
     flow.add { type = "label", caption = { np("mode") } }
     flow.add {
@@ -913,6 +938,7 @@ local function on_gui_opened(e)
 
     tools.get_vars(player).edited_device = device
     frame.force_auto_center()
+    player.opened = frame
 end
 
 tools.on_gui_click(np("importfa"),
@@ -1268,7 +1294,6 @@ end
 
 
 tools.on_event(defines.events.on_gui_opened, on_gui_opened)
-tools.on_event(defines.events.on_gui_closed, on_gui_closed)
 
 tools.on_gui_click(np("close"), ---@param e EventData.on_gui_click
     function(e)

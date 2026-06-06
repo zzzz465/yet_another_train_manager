@@ -1,4 +1,122 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.22
+Date: 15.04.2026
+  Changes:
+    - Lower the cost of the technology for pyanodon mods
+    - Add "Max available item/fluid" ouput on red wire
+    - Add generic fluid to match multiple fluid in stock
+    - Add stock in request display
+---------------------------------------------------------------------------------------------------
+Version: 1.0.21
+Date: 01.02.2026
+  Bugfixes:
+    - Fix migrations
+---------------------------------------------------------------------------------------------------
+Version: 1.0.20
+Date: 02.01.2026
+  Bugfixes:
+    - Change stuck train timeout setting
+    - Improve path finding
+---------------------------------------------------------------------------------------------------
+Version: 1.0.19
+Date: 02.12.2025
+  Bugfixes:
+    - Fix routing for mix fluid and item station
+    - Fix routing in space exploration
+---------------------------------------------------------------------------------------------------
+Version: 1.0.18
+Date: 19.11.2025
+  Changes:
+    - Add compatibility avec Space exploration (through space elevator).
+    - Recommendation: if using Space Exploration, disable teleporters for a better game experience
+    - Add compatibility with "Electronic locomotive"
+    - Keep order in train list
+  Bugfixes:
+    - Fix invalid unload in combined deliveries (many pickup , one unload)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.17
+Date: 21.06.2025
+  Changes:
+    - Add quality in layout filtering and builder station
+  Bugfixes:
+    - Fix crash when removing a mod with locomotive or wagin
+---------------------------------------------------------------------------------------------------
+Version: 1.0.16
+Date: 01.06.2025
+  Bugfixes:
+    - Fix crash on network mask filter
+---------------------------------------------------------------------------------------------------
+Version: 1.0.15
+Date: 25.05.2025
+  Bugfixes:
+    - Fix crash on trainstop or rail removal
+  Changes:
+    - Close Combinator UI on ESCAPE
+---------------------------------------------------------------------------------------------------
+Version: 1.0.14
+Date: 16.05.2025
+  Bugfixes:
+    - Fix crash in train removal
+---------------------------------------------------------------------------------------------------
+Version: 1.0.13
+Date: 14.05.2025
+  Bugfixes:
+    - Fix crash in event list
+  Changes:
+    - Add shortcut to open GUI (default Alt+O)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.12
+Date: 10.05.2025
+  Bugfixes:
+    - Fix crash on OARC mod
+---------------------------------------------------------------------------------------------------
+Version: 1.0.11
+Date: 08.05.2025
+  Bugfixes:
+    - Fix missing migration
+---------------------------------------------------------------------------------------------------
+Version: 1.0.10
+Date: 05.05.2025
+  Bugfixes:
+    - Fix inactivity delay
+---------------------------------------------------------------------------------------------------
+Version: 1.0.9
+Date: 28.04.2025
+  Changes:
+    - add network mask and train layout to teleporters
+---------------------------------------------------------------------------------------------------
+Version: 1.0.8
+Date: 12.04.2025
+  Bugfixes:
+    - Fix invalid teleportation on a curved rail
+---------------------------------------------------------------------------------------------------
+Version: 1.0.7
+Date: 12.04.2025
+  Bugfixes:
+    - Fix a crash on teleporter
+---------------------------------------------------------------------------------------------------
+Version: 1.0.6
+Date: 06.04.2025
+  Info:
+    - Fix crash on teleporter
+    - Set minimum version of Factorio to 2.0.43
+---------------------------------------------------------------------------------------------------
+Version: 1.0.5
+Date: 07.03.2025
+  Info:
+    - add settings to disable teleporters
+---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 23.02.2025
+  Info:
+    - Add quality for fluid wagon
+    - Fix crash when combinator output global stock
+---------------------------------------------------------------------------------------------------
+Version: 1.0.3
+Date: 09.02.2025
+  Info:
+    - Change thumbnail
+---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 06.05.2024
   Info:

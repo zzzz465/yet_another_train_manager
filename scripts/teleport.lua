@@ -38,21 +38,31 @@ function teleport.try_teleport(device) end
 ---@param target_pos MapPosition
 ---@param starter_records ScheduleRecord[]
 ---@param dst_network SurfaceNetwork?
+---@param train Train?
 ---@return ScheduleRecord[] ?
-function teleport.add_teleporter(network, start_pos, target_pos, starter_records, dst_network)
+function teleport.add_teleporter(network, start_pos, target_pos, starter_records, dst_network, train)
     if not network.teleporters then return end
-
-    local dd = distance(start_pos, target_pos)
-    if dd < config.teleport_min_distance then return end
 
     local min_tlp1
     local min_tlp2
     local surface_change
+    local network_mask = (train and train.network_mask) or -1
     if not dst_network or network == dst_network then
+        local dd = distance(start_pos, target_pos)
+        if dd < config.teleport_min_distance then return starter_records end
+
         local min_d1
         local min_d2
         for _, tlp in pairs(network.teleporters) do
             if not tlp.inactive and tlp.trainstop and tlp.trainstop.valid then
+
+                if train and tlp.patterns and not (tlp.patterns[train.gpattern] or tlp.patterns[train.rpattern]) then
+                    goto skip
+                end
+                if band(network_mask, tlp.network_mask) == 0 then
+                    goto skip
+                end
+
                 local d1 = distance(tlp.position, start_pos)
                 if d1 < tlp.teleport_range then
                     if not min_d1 or min_d1 > d1 then
@@ -68,35 +78,51 @@ function teleport.add_teleporter(network, start_pos, target_pos, starter_records
                         min_tlp2 = tlp
                     end
                 end
+
+                ::skip::
             end
         end
 
-        if min_tlp1 == min_tlp2 then return end
-        if not min_d1 or not min_d2 then return end
+        if min_tlp1 == min_tlp2 then return starter_records end
+        if not min_d1 or not min_d2 then return starter_records end
 
-        if min_d1 + min_d2 > dd / config.teleport_threshold then return end
+        if min_d1 + min_d2 > dd / config.teleport_threshold then return starter_records end
     else
         surface_change = true
         local min_d1
         local min_d2
         for _, tlp in pairs(network.teleporters) do
             if not tlp.inactive and tlp.trainstop and tlp.trainstop.valid then
+                if train and tlp.patterns and not (tlp.patterns[train.gpattern] or tlp.patterns[train.rpattern]) then
+                    goto skip
+                end
+                if band(network_mask, tlp.network_mask) == 0 then
+                    goto skip
+                end
                 local d1 = distance(tlp.position, start_pos)
                 if not min_d1 or min_d1 > d1 then
                     min_d1 = d1
                     min_tlp1 = tlp
                 end
+                ::skip::
             end
         end
         if not min_tlp1 then return nil end
 
         for _, tlp in pairs(dst_network.teleporters) do
             if not tlp.inactive and tlp.trainstop and tlp.trainstop.valid then
+                if train and tlp.patterns and not (tlp.patterns[train.gpattern] or tlp.patterns[train.rpattern]) then
+                    goto skip
+                end
+                if band(network_mask, tlp.network_mask) == 0 then
+                    goto skip
+                end
                 local d2 = distance(tlp.position, target_pos)
                 if not min_d2 or min_d2 > d2 then
                     min_d2 = d2
                     min_tlp2 = tlp
                 end
+                ::skip::
             end
         end
         if not min_tlp2 then return nil end
@@ -104,23 +130,41 @@ function teleport.add_teleporter(network, start_pos, target_pos, starter_records
 
     local teleporter1 = min_tlp1.trainstop
     local tp_rail1 = teleporter1.connected_rail
-    if not (tp_rail1 and tp_rail1.valid) then return end
+    if not (tp_rail1 and tp_rail1.valid) then return {} end
 
     local rail_direction = teleporter1.connected_rail_direction
     local rev_rail_direction = rail_direction == defines.rail_direction.front and defines.rail_direction.back or defines.rail_direction.front
 
     ---@type LuaEntity?
     local rail = tp_rail1.get_rail_segment_end(rev_rail_direction)
-    if not rail then return end
-    rail = rail.get_connected_rail {
-        rail_direction = rev_rail_direction,
-        rail_connection_direction = defines.rail_connection_direction.straight
-    }
-    if not rail then return end
-    rail = rail.get_connected_rail {
-        rail_direction = rev_rail_direction,
-        rail_connection_direction = defines.rail_connection_direction.straight
-    }
+
+    ---@param current LuaEntity
+    local function find_rail(current)
+        local rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.straight
+        }
+        if rail then return rail end
+
+        rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.left
+        }
+        if rail then return rail end
+
+        rail = current.get_connected_rail {
+            rail_direction = rev_rail_direction,
+            rail_connection_direction = defines.rail_connection_direction.right
+        }
+        if rail then return rail end
+
+        return current
+    end
+
+    if rail then
+        rail = find_rail(rail)
+        rail = find_rail(rail)
+    end
 
     if rail then
         table.insert(starter_records, {

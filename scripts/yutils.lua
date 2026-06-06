@@ -448,7 +448,12 @@ function yutils.has_fuel(train, min_time)
                 if burner then
                     fuel_value = fuel_value + burner.remaining_burning_fuel
                 end
-                if fuel_value < energy_usage then return false end
+                if fuel_value < energy_usage then 
+                    if loco.burner.fuel_categories.electronic then
+                        return true
+                    end
+                    return false 
+                end
 
                 local bri = loco.get_burnt_result_inventory()
                 if bri and #bri > 0 and bri.is_full() then
@@ -598,7 +603,7 @@ function yutils.route_to_refueler(train, device)
     table.insert(records, {
         station = trainstop.backer_name,
         wait_conditions = {
-            { type = "inactivity", compare_type = "and", ticks = 120 }
+            { type = "inactivity", compare_type = "and", ticks = 300 }
         }
     })
 
@@ -819,17 +824,17 @@ end
 ---@param train Train
 function yutils.check_refuel(train)
     yutils.read_train_internals(train)
+    train.timeout_tick = nil
     if not train.has_fuel then
         local network = yutils.get_network(train.front_stock)
         local refueler = yutils.find_refueler(network, train)
-        if not refueler and network.connected_network then
+        if not refueler and network.connected_network and commons.se_enabled then
             refueler = yutils.find_refueler(network.connected_network, train)
         end
         if refueler then
             refueler.train = train
             train.state = defs.train_states.to_refueler
             train.refueler = refueler
-            train.timeout_tick = nil
 
             -- free depot
             if train.depot and train.depot.role == depot_role then
@@ -965,7 +970,7 @@ function yutils.content_to_item_map(content)
             local qname = signalid.name
             ---@cast qname -nil
             if signalid.quality and signalid.quality ~= "normal" then
-                qname = qname .. "/" .. signalid.quality 
+                qname = qname .. "/" .. signalid.quality
             end
             item_map[qname] = count
         end
@@ -987,7 +992,11 @@ function yutils.create_layout_strings(pattern)
         else
             local item = prototypes.entity[element.type].items_to_place_this[1]
             if item then
-                marker = "[item=" .. item.name .. "]"
+                if element.quality then
+                    marker = "[item=" .. item.name .. ",quality=" .. element.quality .. "]"
+                else
+                    marker = "[item=" .. item.name .. "]"
+                end
             end
         end
         if marker then
@@ -1039,7 +1048,7 @@ function yutils.build_filters(content, sign)
     if content then
         filters = {}
         for name, count in pairs(content) do
-            local signalid = tools.id_to_signal(name)
+            local signalid = tools.id_to_filter(name)
             table.insert(filters, {
                 value = signalid,
                 min = sign * count
@@ -1143,7 +1152,6 @@ function yutils.signal_name(signalId)
     end
 end
 
-
 ---@param network SurfaceNetwork
 local function compute_teleporter_infos(network)
     network.has_planet_teleporter = nil
@@ -1168,10 +1176,12 @@ local function compute_teleporter_infos(network)
                     d.teleporter_in_range = nil
                     if d.position then
                         local found_teleporter = find_device(node, d) --[[@as Device]]
-                        local dist = distance(d.position, found_teleporter.position)
-                        if dist < found_teleporter.teleport_range then
-                            d.teleporter_in_range = found_teleporter
-                            network.has_planet_teleporter = true
+                        if found_teleporter then
+                            local dist = distance(d.position, found_teleporter.position)
+                            if dist < found_teleporter.teleport_range then
+                                d.teleporter_in_range = found_teleporter
+                                network.has_planet_teleporter = true
+                            end
                         end
                     end
                 end

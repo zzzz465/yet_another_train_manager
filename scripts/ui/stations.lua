@@ -102,11 +102,11 @@ local sort_methods = {
     state = --
     ---@param d1 Device
     ---@param d2 Device
-    function(d1, d2) return d1.image_index < d2.image_index end,
+    function(d1, d2) return (d1.image_index or 1) < (d2.image_index or 1) end,
     ["-state"] = --
     ---@param d1 Device
     ---@param d2 Device
-    function(d1, d2) return d2.image_index < d1.image_index end,
+    function(d1, d2) return (d2.image_index or 1) < (d1.image_index or 1) end,
     name = --
     ---@param d1 Device
     ---@param d2 Device
