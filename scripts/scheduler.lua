@@ -146,6 +146,7 @@ local function find_provider(request, forbidden, no_surface_change)
         if delivery_count >= 1 then
             if production_device.max_delivery and delivery_count >= production_device.max_delivery then
                 production_device.failcode = 82
+                request.failcode = 82
                 return
             end
 
@@ -833,7 +834,7 @@ function scheduler.process_request(request)
                 device.network.reservations_tick = context.session_tick
             end
         end
-        if not request.producer_failed_logged then
+        if not request.producer_failed_logged and request.failcode ~= 82 then
             logger.report_producer_notfound(request)
         end
         table.insert(context.waiting_requests, request)
