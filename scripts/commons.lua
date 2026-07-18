@@ -1,7 +1,7 @@
 local tools = require("scripts.tools")
 
 local prefix = "yaltn"
-local modpath = "__yet_another_train_manager__"
+local modpath = "__yatm-2-1-tmp-fix__"
 local device_name = prefix .. "-device"
 
 local commons = {

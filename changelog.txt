@@ -1,8 +1,9 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.0.23
+Version: 0.1.0
 Date: 18.07.2026
   Changes:
-    - Add Factorio 2.1 compatibility
+    - Add Factorio 2.1 compatibility based on upstream 1.0.22
+    - Rename the temporary fork for Mod Portal distribution
   Bugfixes:
     - Replace the removed flib migration module with Factorio's built-in version comparison
 ---------------------------------------------------------------------------------------------------
