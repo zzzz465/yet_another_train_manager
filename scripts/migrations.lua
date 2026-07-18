@@ -1,5 +1,3 @@
-local migration = require("__flib__.migration")
-
 local tools = require("scripts.tools")
 local commons = require("scripts.commons")
 local defs = require("scripts._defs")
@@ -119,13 +117,33 @@ local migrations_table = {
     ["1.0.11"] = migration_1_0_11
 }
 
+local function run_version_migrations(data)
+    local change = data.mod_changes[script.mod_name]
+    if not change or not change.old_version then
+        return
+    end
+
+    local versions = {}
+    for version, _ in pairs(migrations_table) do
+        if helpers.compare_versions(change.old_version, version) < 0 then
+            table.insert(versions, version)
+        end
+    end
+    table.sort(versions, function(a, b)
+        return helpers.compare_versions(a, b) < 0
+    end)
+    for _, version in ipairs(versions) do
+        migrations_table[version]()
+    end
+end
+
 
 local function on_configuration_changed(data)
     Runtime.initialize()
 
     local context = yutils.get_context()
     update_trains(context)
-    migration.on_config_changed(data, migrations_table)
+    run_version_migrations(data)
 
     yutils.fix_all(context)
     

@@ -1,5 +1,3 @@
-local migration = require("__flib__.migration")
-
 local tools = require("scripts.tools")
 local commons = require("scripts.commons")
 local defs = require("scripts._defs")
